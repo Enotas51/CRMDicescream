@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ operation.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px">
+  <div class="d-flex justify-content-between mb-3">
+    <h1 class="h4">{{ operation.title }}</h1>
+    {% if can_edit %}
+    <div class="d-flex gap-2">
+      <a href="{% url 'finance:utilities_edit' operation.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      <a href="{% url 'finance:utilities_delete' operation.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+    </div>
+    {% endif %}
+  </div>
+  {% if is_from_debt %}
+  <div class="alert alert-secondary small">Создано автоматически при погашении задолженности.</div>
+  {% endif %}
+  <div class="card card-body">
+    <p><strong>Тип:</strong> {{ operation.get_operation_type_display }}</p>
+    <p><strong>Источник:</strong> {{ operation.source_display }}</p>
+    <p><strong>Сумма:</strong> {{ operation.amount }} ₽</p>
+    <p><strong>Дата:</strong> {{ operation.date|date:"d.m.Y" }}</p>
+    {% if operation.debt %}<p><strong>Задолженность:</strong> <a href="{% url 'debts:detail' operation.debt.pk %}">{{ operation.debt.title }}</a></p>{% endif %}
+    {% if operation.repayment %}<p><strong>Погашение:</strong> <a href="{% url 'finance:transaction_detail' operation.repayment.pk %}">{{ operation.repayment.title }}</a></p>{% endif %}
+    <p>{{ operation.notes|linebreaks|default:"" }}</p>
+  </div>
+</div>
+{% endblock %}

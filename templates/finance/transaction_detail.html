@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ transaction.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px">
+  <div class="d-flex justify-content-between mb-3">
+    <h1 class="h4">{{ transaction.title }}</h1>
+    {% if can_edit or user.is_admin %}
+    <div class="d-flex gap-2">
+      <a href="{% url 'finance:transaction_edit' transaction.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      <a href="{% url 'finance:transaction_delete' transaction.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card card-body">
+    <p><strong>Сумма:</strong> {{ transaction.amount }} ₽ ({{ transaction.get_transaction_type_display }})</p>
+    <p><strong>Дата:</strong> {{ transaction.date|date:"d.m.Y" }}</p>
+    {% if transaction.transaction_type == 'debt_repayment' %}
+    <p><strong>Задолженность:</strong> {% if transaction.debt %}<a href="{% url 'debts:detail' transaction.debt.pk %}">{{ transaction.debt.title }}</a>{% else %}—{% endif %}</p>
+    <p><strong>Кто погашает:</strong> {{ transaction.repaid_by_display }}</p>
+    {% if transaction.skip_utilities %}
+    <p><strong>Коммунальные:</strong> не удерживались</p>
+    {% elif transaction.utilities_portion %}
+    <p><strong>На коммунальные:</strong> {{ transaction.utilities_portion }} ₽</p>
+    {% endif %}
+    {% if transaction.debt_reduction_amount %}<p><strong>На погашение долга:</strong> {{ transaction.debt_reduction_amount }} ₽</p>{% endif %}
+    {% else %}
+    <p><strong>Категория:</strong> {{ transaction.category|default:"—" }}</p>
+    {% endif %}
+    <p><strong>Проект:</strong> {{ transaction.project|default:"—" }}</p>
+    <p>{{ transaction.notes|linebreaks|default:"" }}</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Редактирование пользователя{% endblock %}
+{% block content %}
+<div class="container" style="max-width:600px">
+  <h1 class="h4 mb-3">Редактирование: {{ object.username }}</h1>
+  <form method="post" class="card card-body">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">Сохранить</button>
+      <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

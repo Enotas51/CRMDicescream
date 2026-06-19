@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:720px">
+  <div class="d-flex justify-content-between mb-3">
+    <h1 class="h4">{{ event.title }}</h1>
+    {% if can_edit or user.is_admin %}
+    <div class="d-flex gap-2">
+      <a href="{% url 'calendar_app:edit' event.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      <a href="{% url 'calendar_app:delete' event.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card card-body">
+    <p>{{ event.description|linebreaks|default:"Без описания" }}</p>
+    <p><strong>Начало:</strong> {{ event.start|date:"d.m.Y H:i" }}</p>
+    <p><strong>Окончание:</strong> {{ event.end|date:"d.m.Y H:i"|default:"—" }}</p>
+    <p><strong>Место:</strong> {{ event.location|default:"—" }}</p>
+    <p><strong>Проект:</strong> {% if event.project %}{{ event.project.name }}{% else %}—{% endif %}</p>
+  </div>
+</div>
+{% endblock %}

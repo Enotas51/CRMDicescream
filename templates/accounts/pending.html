@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Ожидание одобрения — {{ site_name }}{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="card auth-card text-center">
+    <div class="card-body">
+      <i class="bi bi-hourglass-split display-4 text-warning mb-3"></i>
+      <h1 class="auth-brand">Ожидание одобрения</h1>
+      <p class="auth-subtitle mt-2">
+        Ваш аккаунт зарегистрирован и ожидает назначения роли администратором.
+        После одобрения вы получите доступ к системе.
+      </p>
+      {% if user.yandex_id %}
+      <p class="small text-muted mt-3">Вход через Яндекс: {{ user.email }}</p>
+      {% endif %}
+      <a href="{% url 'account_logout' %}" class="btn btn-outline-secondary mt-4">Выйти</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

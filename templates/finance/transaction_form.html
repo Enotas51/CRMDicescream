@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Редактирование транзакции{% else %}Новая транзакция{% endif %}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px">
+  <h1 class="h4 mb-3">{% if object %}Редактирование транзакции{% else %}Новая транзакция{% endif %}</h1>
+  <form method="post" class="card card-body" id="transactionForm">
+    {% csrf_token %}
+    {% for field in form %}
+    {% if field.name == 'skip_utilities' %}
+    <div class="mb-3 field-wrap field-{{ field.name }}" data-field="{{ field.name }}">
+      <div class="form-check">
+        {{ field }}
+        <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+      </div>
+      <div class="form-text">Вся сумма пойдёт на погашение долга, без отчисления на коммунальные.</div>
+      {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% else %}
+    <div class="mb-3 field-wrap field-{{ field.name }}" data-field="{{ field.name }}">
+      <label class="form-label">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div id="debtInfo" class="alert alert-secondary small d-none mb-3"></div>
+    <div id="debtorInfo" class="alert alert-light border small d-none mb-3"></div>
+
+    <button class="btn btn-primary">Сохранить</button>
+    <a href="{% url 'finance:dashboard' %}" class="btn btn-outline-secondary">Отмена</a>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var debtsData = {{ debts_json|safe }};
+  var typeField = document.getElementById('id_transaction_type');
+  var debtField = document.getElementById('id_debt');
+  var debtorField = document.getElementById('id_debt_debtor');
+  var debtInfo = document.getElementById('debtInfo');
+  var debtorInfo = document.getElementById('debtorInfo');
+  var debtRepaymentType = 'debt_repayment';
+
+  var debtFields = ['debt', 'debt_debtor', 'skip_utilities'];
+  var skipUtilitiesField = document.getElementById('id_skip_utilities');
+
+  function getDebt() {
+    if (!debtField) return null;
+    return debtsData.find(function (d) { return String(d.id) === debtField.value; });
+  }
+
+  function getDebtor(debt) {
+    if (!debtorField || !debt) return null;
+    return debt.debtors.find(function (d) { return String(d.id) === debtorField.value; });
+  }
+
+  function populateDebtors(debt, selectedId) {
+    if (!debtorField) return;
+    debtorField.innerHTML = '<option value="">— выберите должника —</option>';
+    if (!debt) return;
+    debt.debtors.forEach(function (d) {
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.display + ' (остаток ' + d.remaining + ' ₽)';
+      if (selectedId && String(selectedId) === String(d.id)) opt.selected = true;
+      debtorField.appendChild(opt);
+    });
+  }
+
+  function toggleDebtFields() {
+    var isRepayment = typeField && typeField.value === debtRepaymentType;
+    debtFields.forEach(function (name) {
+      var wrap = document.querySelector('.field-wrap.field-' + name);
+      if (wrap) wrap.style.display = isRepayment ? '' : 'none';
+    });
+    var catWrap = document.querySelector('.field-wrap.field-category');
+    if (catWrap) catWrap.style.display = isRepayment ? 'none' : '';
+    if (!isRepayment) {
+      if (debtInfo) debtInfo.classList.add('d-none');
+      if (debtorInfo) debtorInfo.classList.add('d-none');
+    } else {
+      updateDebtInfo();
+    }
+  }
+
+  function updateDebtInfo() {
+    var debt = getDebt();
+    if (!debt || !debtInfo) {
+      if (debtInfo) debtInfo.classList.add('d-none');
+      populateDebtors(null);
+      return;
+    }
+    debtInfo.classList.remove('d-none');
+    debtInfo.innerHTML = '<strong>Кредитор:</strong> ' + debt.creditor_display +
+      ' · <strong>Общий остаток:</strong> ' + debt.remaining + ' ₽' +
+      (parseFloat(debt.utilities_amount) > 0
+        ? ' · <strong>Коммунальные:</strong> ' + debt.utilities_amount + ' ₽ с каждого платежа'
+        : '');
+
+    var currentDebtorId = debtorField ? debtorField.value : null;
+    populateDebtors(debt, currentDebtorId);
+    updateDebtorInfo();
+  }
+
+  function updateDebtorInfo() {
+    var debt = getDebt();
+    var debtor = getDebtor(debt);
+    if (!debtor || !debtorInfo) {
+      if (debtorInfo) debtorInfo.classList.add('d-none');
+      return;
+    }
+    var skipUtilities = skipUtilitiesField && skipUtilitiesField.checked;
+    var utilitiesNote = skipUtilities
+      ? '<span class="text-muted">(коммунальные не удерживаются — вся сумма на долг)</span>'
+      : (parseFloat(debt.utilities_amount) > 0
+        ? '<span class="text-muted">(на долг: сумма − ' + debt.utilities_amount + ' ₽ коммунальных)</span>'
+        : '<span class="text-muted">(вся сумма на долг)</span>');
+    debtorInfo.classList.remove('d-none');
+    debtorInfo.innerHTML = '<strong>Должник:</strong> ' + debtor.display +
+      ' · <strong>Его долг:</strong> ' + debtor.amount + ' ₽' +
+      ' · <strong>Остаток долга:</strong> ' + debtor.remaining + ' ₽ ' +
+      utilitiesNote;
+  }
+
+  if (typeField) typeField.addEventListener('change', toggleDebtFields);
+  if (debtField) debtField.addEventListener('change', updateDebtInfo);
+  if (debtorField) debtorField.addEventListener('change', updateDebtorInfo);
+  if (skipUtilitiesField) skipUtilitiesField.addEventListener('change', updateDebtorInfo);
+  toggleDebtFields();
+});
+</script>
+{% endblock %}

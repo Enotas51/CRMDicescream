@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Резерв{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Резерв</h1>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'finance:dashboard' %}" class="btn btn-outline-secondary btn-sm">← Финансы</a>
+      {% if can_edit %}
+      <a href="{% url 'finance:reserve_create' %}?source=balance" class="btn btn-primary btn-sm">+ С баланса</a>
+      <a href="{% url 'finance:reserve_create' %}?source=external" class="btn btn-success btn-sm">+ Извне</a>
+      <a href="{% url 'finance:reserve_create' %}?direction=from_reserve" class="btn btn-outline-warning btn-sm">Вернуть в баланс</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card border-start border-4 border-primary">
+        <div class="card-body">
+          <div class="small text-muted">Основной баланс</div>
+          <div class="h4 mb-0 text-{% if balances.main_balance >= 0 %}success{% else %}danger{% endif %}">{{ balances.main_balance|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card border-start border-4 border-info">
+        <div class="card-body">
+          <div class="small text-muted">Резерв</div>
+          <div class="h4 mb-0 text-info">{{ balances.reserve_balance|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="small text-muted">В резерв с баланса</div>
+          <div class="h5 mb-0">{{ balances.to_reserve_from_balance|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="small text-muted">В резерв извне</div>
+          <div class="h5 mb-0">{{ balances.to_reserve_external|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Операции с резервом</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Название</th>
+            <th>Операция</th>
+            <th>Источник</th>
+            <th>Проект</th>
+            <th class="text-end">Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transfers %}
+          <tr>
+            <td>{{ t.date|date:"d.m.Y" }}</td>
+            <td><a href="{% url 'finance:reserve_detail' t.pk %}">{{ t.title }}</a></td>
+            <td>{{ t.get_direction_display }}</td>
+            <td>{{ t.source_display }}</td>
+            <td>{{ t.project|default:"—" }}</td>
+            <td class="text-end {% if t.direction == 'to_reserve' %}text-info{% else %}text-warning{% endif %}">
+              {% if t.direction == 'to_reserve' %}+{% else %}−{% endif %}{{ t.amount }} ₽
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-muted">Операций пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

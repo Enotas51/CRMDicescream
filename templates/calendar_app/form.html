@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Редактирование события{% else %}Новое событие{% endif %}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:720px">
+  <h1 class="h4 mb-3">{% if object %}Редактирование события{% else %}Новое событие{% endif %}</h1>
+  <form method="post" class="card card-body">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="mb-3 {% if field.name == 'all_day' %}form-check{% endif %}">
+      {% if field.name == 'all_day' %}
+      {{ field }} <label class="form-check-label">{{ field.label }}</label>
+      {% else %}
+      <label class="form-label">{{ field.label }}</label>
+      {{ field }}
+      {% endif %}
+      {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary">Сохранить</button>
+      <a href="{% url 'calendar_app:calendar' %}" class="btn btn-outline-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Календарь — {{ month_name }} {{ year }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">{{ month_name }} {{ year }}</h1>
+    <div class="d-flex gap-2">
+      <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-left"></i></a>
+      <a href="?year={{ today.year }}&month={{ today.month }}" class="btn btn-outline-secondary btn-sm">Сегодня</a>
+      <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-right"></i></a>
+      {% if can_edit %}<a href="{% url 'calendar_app:create' %}" class="btn btn-primary btn-sm">+ Событие</a>{% endif %}
+    </div>
+  </div>
+  <div class="calendar-grid">
+    <div class="calendar-weekdays">
+      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+    </div>
+    {% for week in calendar_weeks %}
+    <div class="calendar-week">
+      {% for cell in week %}
+      <div class="calendar-day {% if cell.date.month != month %}other-month{% endif %} {% if cell.date == today %}today{% endif %}">
+        <div class="day-number">{{ cell.date.day }}</div>
+        {% for event in cell.events %}
+        <a href="{% url 'calendar_app:detail' event.pk %}" class="calendar-event" style="background:{{ event.color }}">{{ event.title|truncatechars:18 }}</a>
+        {% endfor %}
+        {% for task in cell.tasks %}
+        <a href="{% url 'tasks:detail' task.pk %}" class="calendar-task">{{ task.title|truncatechars:16 }}</a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

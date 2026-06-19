@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — {{ site_name }}{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="card auth-card">
+    <div class="card-body">
+      <h1 class="auth-brand">DiceScream Fin</h1>
+      <p class="auth-subtitle">Создание аккаунта</p>
+      <p class="text-center small text-muted mt-2 mb-0">После регистрации администратор назначит вам роль.</p>
+
+      <form method="post" action="{% url 'account_signup' %}" class="mt-4">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+          <label class="auth-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary w-100 mt-2">Зарегистрироваться</button>
+      </form>
+
+      <div class="auth-divider">или</div>
+      <a href="{% url 'accounts:yandex_login' %}" class="btn btn-warning w-100">Войти через Яндекс</a>
+      <p class="auth-footer mt-4 mb-0">
+        Уже есть аккаунт? <a href="{% url 'account_login' %}">Войти</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

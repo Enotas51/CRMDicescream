@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ transfer.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px">
+  <div class="d-flex justify-content-between mb-3">
+    <h1 class="h4">{{ transfer.title }}</h1>
+    {% if can_edit or user.is_admin %}
+    <div class="d-flex gap-2">
+      <a href="{% url 'finance:reserve_edit' transfer.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      <a href="{% url 'finance:reserve_delete' transfer.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card card-body">
+    <p><strong>Операция:</strong> {{ transfer.get_direction_display }}</p>
+    <p><strong>Источник:</strong> {{ transfer.source_display }}</p>
+    <p><strong>Сумма:</strong> {{ transfer.amount }} ₽</p>
+    <p><strong>Дата:</strong> {{ transfer.date|date:"d.m.Y" }}</p>
+    <p><strong>Проект:</strong> {{ transfer.project|default:"—" }}</p>
+    <p>{{ transfer.notes|linebreaks|default:"" }}</p>
+  </div>
+</div>
+{% endblock %}

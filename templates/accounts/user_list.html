@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Пользователи</h1>
+  </div>
+  <div class="btn-group mb-3">
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary {% if not request.GET.status %}active{% endif %}">Все</a>
+    <a href="?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">Ожидают</a>
+    <a href="?status=approved" class="btn btn-outline-success {% if request.GET.status == 'approved' %}active{% endif %}">Одобрены</a>
+    <a href="?status=rejected" class="btn btn-outline-danger {% if request.GET.status == 'rejected' %}active{% endif %}">Отклонены</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Пользователь</th>
+          <th>Email</th>
+          <th>Роль</th>
+          <th>Статус</th>
+          <th>Дата</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            {% if u.avatar_url %}<img src="{{ u.avatar_url }}" width="28" height="28" class="rounded-circle me-2">{% endif %}
+            {{ u.username }}
+          </td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.get_role_display }}</td>
+          <td><span class="badge bg-{% if u.approval_status == 'approved' %}success{% elif u.approval_status == 'pending' %}warning{% else %}danger{% endif %}">{{ u.get_approval_status_display }}</span></td>
+          <td>{{ u.date_joined|date:"d.m.Y" }}</td>
+          <td class="text-end">
+            {% if u.approval_status == 'pending' %}
+            <form method="post" action="{% url 'accounts:user_approve' u.pk %}" class="d-inline">
+              {% csrf_token %}
+              <select name="role" class="form-select form-select-sm d-inline-block w-auto">
+                <option value="observer">Наблюдатель</option>
+                <option value="editor">Редактор</option>
+                <option value="admin">Администратор</option>
+              </select>
+              <button class="btn btn-sm btn-success">Одобрить</button>
+            </form>
+            <form method="post" action="{% url 'accounts:user_reject' u.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-danger">Отклонить</button>
+            </form>
+            {% else %}
+            <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-outline-primary">Изменить</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

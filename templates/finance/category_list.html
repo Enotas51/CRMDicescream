@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Категории{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between mb-3">
+    <h1 class="h3 mb-0">Категории</h1>
+    {% if user.can_edit %}<a href="{% url 'finance:category_create' %}" class="btn btn-primary btn-sm">+ Категория</a>{% endif %}
+  </div>
+  <div class="row g-2">
+    {% for cat in categories %}
+    <div class="col-md-4"><div class="card"><div class="card-body d-flex align-items-center gap-2">
+      <span class="badge rounded-pill" style="background:{{ cat.color }}">&nbsp;</span>
+      {{ cat.name }} <span class="text-muted small">({{ cat.get_transaction_type_display }})</span>
+    </div></div></div>
+    {% empty %}
+    <div class="col-12 text-muted">Категорий нет</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

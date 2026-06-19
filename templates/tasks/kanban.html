@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Задачи — Kanban{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Задачи</h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'tasks:list' %}" class="btn btn-outline-secondary btn-sm">Список</a>
+      {% if can_edit %}<a href="{% url 'tasks:create' %}" class="btn btn-primary btn-sm">+ Задача</a>{% endif %}
+    </div>
+  </div>
+  <div class="kanban-board">
+    {% for column in kanban_columns %}
+    <div class="kanban-column">
+      <div class="kanban-column-header">{{ column.label }}</div>
+      {% for task in column.tasks %}
+      <div class="kanban-card">
+        <a href="{% url 'tasks:detail' task.pk %}" class="fw-semibold text-decoration-none">{{ task.title }}</a>
+        {% if task.project %}<div class="small text-muted">{{ task.project.name }}</div>{% endif %}
+        {% if task.due_date %}<div class="small"><i class="bi bi-calendar"></i> {{ task.due_date|date:"d.m.Y" }}</div>{% endif %}
+        {% if can_edit %}
+        <form method="post" action="{% url 'tasks:update_status' task.pk %}" class="mt-2">
+          {% csrf_token %}
+          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+            {% for col in kanban_columns %}
+            <option value="{{ col.status }}" {% if task.status == col.status %}selected{% endif %}>{{ col.label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        {% endif %}
+      </div>
+      {% empty %}
+      <div class="text-muted small px-1">Пусто</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

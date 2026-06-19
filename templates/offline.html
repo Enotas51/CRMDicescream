@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Нет сети{% endblock %}
+{% block content %}
+<div class="container text-center py-5">
+  <i class="bi bi-wifi-off display-4 text-muted"></i>
+  <h1 class="h4 mt-3">Нет подключения к интернету</h1>
+  <p class="text-muted">Проверьте соединение и попробуйте снова.</p>
+  <button class="btn btn-primary" onclick="location.reload()">Обновить</button>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Финансы{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Финансы</h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'finance:reserve' %}" class="btn btn-outline-info btn-sm"><i class="bi bi-safe"></i> Резерв</a>
+      <a href="{% url 'finance:utilities' %}" class="btn btn-outline-success btn-sm"><i class="bi bi-lightning"></i> Коммунальные</a>
+      <a href="{% url 'finance:transactions' %}" class="btn btn-outline-secondary btn-sm">Все транзакции</a>
+      <a href="{% url 'finance:categories' %}" class="btn btn-outline-secondary btn-sm">Категории</a>
+      {% if can_edit %}<a href="{% url 'finance:transaction_create' %}" class="btn btn-primary btn-sm">+ Транзакция</a>{% endif %}
+    </div>
+  </div>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Баланс</div><div class="h4 text-{% if balance >= 0 %}success{% else %}danger{% endif %}">{{ balance|floatformat:2 }} ₽</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Резерв</div><div class="h4 text-info"><a href="{% url 'finance:reserve' %}" class="text-decoration-none text-info">{{ reserve_balance|floatformat:2 }} ₽</a></div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Коммунальные</div><div class="h4 text-success"><a href="{% url 'finance:utilities' %}" class="text-decoration-none text-success">{{ utilities_balance|floatformat:2 }} ₽</a></div></div></div></div>
+  </div>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Доходы</div><div class="h4 text-success">{{ total_income|floatformat:2 }} ₽</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Расходы</div><div class="h4 text-danger">{{ total_expense|floatformat:2 }} ₽</div></div></div></div>
+    <div class="col-md-4"><div class="card stat-card"><div class="card-body"><div class="small text-muted">За месяц (доходы − расходы)</div><div class="h5 mb-0">{{ month_balance|floatformat:2 }} ₽</div></div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">Последние транзакции</div>
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead><tr><th>Дата</th><th>Название</th><th>Тип</th><th>Категория / Долг</th><th>Проект</th><th class="text-end">Сумма</th></tr></thead>
+        <tbody>
+          {% for t in transactions %}
+          <tr>
+            <td>{{ t.date|date:"d.m.Y" }}</td>
+            <td><a href="{% url 'finance:transaction_detail' t.pk %}">{{ t.title }}</a></td>
+            <td>{{ t.get_transaction_type_display }}</td>
+            <td>{% if t.transaction_type == 'debt_repayment' %}{% if t.debt %}<a href="{% url 'debts:detail' t.debt.pk %}">{{ t.debt.title|truncatechars:15 }}</a>{% else %}—{% endif %}{% else %}{{ t.category|default:"—" }}{% endif %}</td>
+            <td>{{ t.project|default:"—" }}</td>
+            <td class="text-end {% if t.transaction_type == 'income' %}text-success{% elif t.transaction_type == 'expense' %}text-danger{% else %}text-primary{% endif %}">
+              {% if t.transaction_type == 'expense' %}-{% endif %}{% if t.transaction_type == 'debt_repayment' %}↗ {% endif %}{{ t.amount }} ₽
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-muted">Транзакций нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

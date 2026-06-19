@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Задолженности{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Задолженности</h1>
+    {% if can_edit %}
+    <a href="{% url 'debts:create' %}" class="btn btn-primary"><i class="bi bi-plus"></i> Новая задолженность</a>
+    {% endif %}
+  </div>
+
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+      <input type="search" name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Поиск...">
+    </div>
+    <div class="col-auto">
+      <select name="status" class="form-select" onchange="this.form.submit()">
+        <option value="">Все статусы</option>
+        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Открыта</option>
+        <option value="partial" {% if request.GET.status == 'partial' %}selected{% endif %}>Частично погашена</option>
+        <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Закрыта</option>
+        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Отменена</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Должники</th>
+          <th>Кредитор</th>
+          <th class="text-end">Сумма</th>
+          <th class="text-end">Остаток</th>
+          <th>Статус</th>
+          <th>Срок</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for debt in debts %}
+        <tr>
+          <td><a href="{% url 'debts:detail' debt.pk %}">{{ debt.title }}</a></td>
+          <td>{{ debt.debtors_display }}</td>
+          <td>
+            {{ debt.creditor_display }}
+            {% if debt.creditor_user %}<i class="bi bi-person-check text-success small" title="Привязан к пользователю"></i>{% endif %}
+          </td>
+          <td class="text-end">{{ debt.amount }} ₽</td>
+          <td class="text-end fw-semibold">{{ debt.remaining_amount }} ₽</td>
+          <td>
+            <span class="badge bg-{% if debt.status == 'closed' %}success{% elif debt.status == 'partial' %}warning{% elif debt.status == 'cancelled' %}secondary{% else %}primary{% endif %}">
+              {{ debt.get_status_display }}
+            </span>
+          </td>
+          <td>{{ debt.due_date|date:"d.m.Y"|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-muted">Задолженностей нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

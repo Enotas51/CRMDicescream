@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Задачи{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between mb-3">
+    <h1 class="h3 mb-0">Список задач</h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'tasks:kanban' %}" class="btn btn-outline-secondary btn-sm">Kanban</a>
+      {% if user.can_edit %}<a href="{% url 'tasks:create' %}" class="btn btn-primary btn-sm">+ Задача</a>{% endif %}
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>Задача</th><th>Проект</th><th>Статус</th><th>Приоритет</th><th>Срок</th><th>Исполнитель</th></tr></thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td><a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a></td>
+          <td>{{ task.project|default:"—" }}</td>
+          <td>{{ task.get_status_display }}</td>
+          <td>{{ task.get_priority_display }}</td>
+          <td>{{ task.due_date|date:"d.m.Y"|default:"—" }}</td>
+          <td>{{ task.assignee|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted">Задач нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

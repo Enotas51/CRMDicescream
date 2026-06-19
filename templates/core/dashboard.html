@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Главная — {{ site_name }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Добро пожаловать, {{ user.first_name|default:user.username }}!</h1>
+    <span class="text-muted">{{ today|date:"d E Y" }}</span>
+  </div>
+
+  {% if user.is_admin and pending_users_count %}
+  <div class="alert alert-warning">
+    <i class="bi bi-person-exclamation"></i>
+    {{ pending_users_count }} пользовател{{ pending_users_count|pluralize:"ь,я,ей" }} ожида{{ pending_users_count|pluralize:"ет,ют,ют" }} одобрения.
+    <a href="{% url 'accounts:user_list' %}?status=pending" class="alert-link">Перейти к списку</a>
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-muted small">Баланс</div>
+          <div class="h4 mb-0 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">{{ balance|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-muted small">Резерв</div>
+          <div class="h4 mb-0 text-info"><a href="{% url 'finance:reserve' %}" class="text-decoration-none text-info">{{ reserve_balance|floatformat:2 }} ₽</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-muted small">Коммунальные</div>
+          <div class="h4 mb-0 text-success"><a href="{% url 'finance:utilities' %}" class="text-decoration-none text-success">{{ utilities_balance|floatformat:2 }} ₽</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-muted small">Проекты</div>
+          <div class="h4 mb-0">{{ projects|length }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-muted small">Задачи на неделю</div>
+          <div class="h4 mb-0">{{ tasks_due|length }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="text-muted small">События</div>
+          <div class="h4 mb-0">{{ upcoming_events|length }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between">
+          <span><i class="bi bi-folder"></i> Активные проекты</span>
+          {% if can_edit %}<a href="{% url 'projects:create' %}" class="btn btn-sm btn-primary">+ Проект</a>{% endif %}
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for project in projects %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'projects:detail' project.pk %}">{{ project.name }}</a>
+            <span class="badge bg-secondary">{{ project.get_status_display }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">Нет проектов</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between">
+          <span><i class="bi bi-check2-square"></i> Срочные задачи</span>
+          {% if can_edit %}<a href="{% url 'tasks:create' %}" class="btn btn-sm btn-primary">+ Задача</a>{% endif %}
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for task in tasks_due %}
+          <li class="list-group-item d-flex justify-content-between">
+            <a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a>
+            <small class="text-muted">{{ task.due_date|date:"d.m" }}</small>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">Нет срочных задач</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-calendar-event"></i> Ближайшие события</div>
+        <ul class="list-group list-group-flush">
+          {% for event in upcoming_events %}
+          <li class="list-group-item d-flex justify-content-between">
+            <a href="{% url 'calendar_app:detail' event.pk %}">{{ event.title }}</a>
+            <small>{{ event.start|date:"d.m H:i" }}</small>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">Нет предстоящих событий</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

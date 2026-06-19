@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Коммунальные услуги{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Коммунальные услуги</h1>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'finance:dashboard' %}" class="btn btn-outline-secondary btn-sm">← Финансы</a>
+      {% if can_edit %}
+      <a href="{% url 'finance:utilities_create' %}?type=deposit" class="btn btn-primary btn-sm">+ Пополнить</a>
+      <a href="{% url 'finance:utilities_create' %}?type=expense" class="btn btn-outline-danger btn-sm">− Расход</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="alert alert-info small">
+    <i class="bi bi-info-circle"></i>
+    Отдельный счёт, не связанный с основным балансом. Пополняется извне или автоматически при погашении задолженностей (если указана сумма на коммунальные).
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card border-start border-4 border-success">
+        <div class="card-body">
+          <div class="small text-muted">Баланс коммунальных</div>
+          <div class="h4 mb-0 text-success">{{ balances.balance|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="small text-muted">Пополнено всего</div>
+          <div class="h5 mb-0">{{ balances.deposits|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="small text-muted">Извне</div>
+          <div class="h5 mb-0">{{ balances.from_external|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="small text-muted">Из задолженностей</div>
+          <div class="h5 mb-0">{{ balances.from_debt|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Операции</div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Название</th>
+            <th>Тип</th>
+            <th>Источник</th>
+            <th class="text-end">Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in operations %}
+          <tr>
+            <td>{{ op.date|date:"d.m.Y" }}</td>
+            <td><a href="{% url 'finance:utilities_detail' op.pk %}">{{ op.title }}</a></td>
+            <td>{{ op.get_operation_type_display }}</td>
+            <td>{{ op.source_display }}</td>
+            <td class="text-end {% if op.operation_type == 'deposit' %}text-success{% else %}text-danger{% endif %}">
+              {% if op.operation_type == 'deposit' %}+{% else %}−{% endif %}{{ op.amount }} ₽
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted">Операций пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

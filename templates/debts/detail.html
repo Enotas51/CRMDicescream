@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}{{ debt.title }}{% endblock %}
+{% block content %}
+<div class="container-fluid" style="max-width:960px">
+  <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">{{ debt.title }}</h1>
+      <span class="badge bg-{% if debt.status == 'closed' %}success{% elif debt.status == 'partial' %}warning{% elif debt.status == 'cancelled' %}secondary{% else %}primary{% endif %}">
+        {{ debt.get_status_display }}
+      </span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if can_edit and debt.status != 'closed' and debt.status != 'cancelled' %}
+      <a href="{% url 'debts:edit' debt.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      {% endif %}
+      {% if user.is_admin %}
+      <a href="{% url 'debts:delete' debt.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body">
+        <div class="text-muted small">Общий долг</div>
+        <div class="h4 mb-0">{{ debt.amount }} ₽</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body">
+        <div class="text-muted small">Погашено (без коммунальных)</div>
+        <div class="h4 mb-0 text-success">{{ repaid_amount }} ₽</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body">
+        <div class="text-muted small">Остаток</div>
+        <div class="h4 mb-0 text-danger">{{ remaining_amount }} ₽</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card"><div class="card-body">
+        <div class="text-muted small">Коммунальные</div>
+        <div class="h4 mb-0 text-info">{{ debt.utilities_amount }} ₽</div>
+        <small class="text-muted">с каждого платежа · всего: {{ utilities_credited }} ₽</small>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">Должники</div>
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Должник</th>
+            <th class="text-end">Сумма</th>
+            <th class="text-end">Погашено</th>
+            <th class="text-end">Остаток</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for debtor in debtors %}
+          <tr>
+            <td>
+              {{ debtor.display_name }}
+              {% if debtor.debtor_user %}
+              <span class="badge bg-light text-dark">@{{ debtor.debtor_user.username }}</span>
+              {% elif debtor.can_link_user %}
+              <span class="badge bg-warning text-dark">не привязан</span>
+              {% endif %}
+            </td>
+            <td class="text-end">{{ debtor.amount }} ₽</td>
+            <td class="text-end text-success">{{ debtor.get_repaid_amount }} ₽</td>
+            <td class="text-end fw-semibold">{{ debtor.remaining_amount }} ₽</td>
+            <td class="text-end">
+              {% if can_edit and debtor.remaining_amount > 0 and debt.status != 'closed' and debt.status != 'cancelled' %}
+              <a href="{% url 'finance:transaction_create' %}?debt={{ debt.pk }}&debtor={{ debtor.pk }}&type=debt_repayment" class="btn btn-sm btn-success">Погасить</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted">Должники не указаны</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <p>{{ debt.description|linebreaks|default:"Без описания" }}</p>
+      <dl class="row mb-0">
+        <dt class="col-sm-3">Кредитор</dt>
+        <dd class="col-sm-9">
+          {{ debt.creditor_display }}
+          {% if debt.creditor_user %}
+          <span class="badge bg-light text-dark">@{{ debt.creditor_user.username }}</span>
+          {% elif show_link_creditor and can_edit %}
+          <span class="badge bg-warning text-dark">не привязан</span>
+          {% endif %}
+        </dd>
+        <dt class="col-sm-3">Проект</dt>
+        <dd class="col-sm-9">{% if debt.project %}<a href="{% url 'projects:detail' debt.project.pk %}">{{ debt.project.name }}</a>{% else %}—{% endif %}</dd>
+        <dt class="col-sm-3">Срок</dt>
+        <dd class="col-sm-9">{{ debt.due_date|date:"d.m.Y"|default:"—" }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  {% if can_edit %}
+  {% for debtor in debtors %}
+  {% if debtor.can_link_user %}
+  <div class="card mb-3">
+    <div class="card-header">Привязать должника «{{ debtor.debtor_name }}» к пользователю</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'debts:link_debtor' debt.pk debtor.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-6">{{ link_form.user }}</div>
+        <div class="col-md-auto"><button class="btn btn-primary">Привязать</button></div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  {% if show_link_creditor %}
+  <div class="card mb-3">
+    <div class="card-header">Привязать кредитора к пользователю</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'debts:link_creditor' debt.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-6">{{ link_form.user }}</div>
+        <div class="col-md-auto"><button class="btn btn-primary">Привязать</button></div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header">История погашений</div>
+    <ul class="list-group list-group-flush">
+      {% for payment in repayments %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <a href="{% url 'finance:transaction_detail' payment.pk %}">{{ payment.title }}</a>
+          <div class="small text-muted">
+            {{ payment.date|date:"d.m.Y" }} · {{ payment.repaid_by_display }}
+            {% if payment.skip_utilities %} · коммунальные не удерживались
+            {% elif payment.utilities_portion %} · коммунальные: {{ payment.utilities_portion }} ₽{% endif %}
+            · на долг: {{ payment.debt_reduction_amount }} ₽
+          </div>
+        </div>
+        <span class="fw-semibold">{{ payment.amount }} ₽</span>
+      </li>
+      {% empty %}
+      <li class="list-group-item text-muted">Погашений пока нет</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
