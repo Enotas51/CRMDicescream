@@ -23,8 +23,6 @@
     <p><strong>На коммунальные:</strong> {{ transaction.utilities_portion }} ₽</p>
     {% endif %}
     {% if transaction.debt_reduction_amount %}<p><strong>На погашение долга:</strong> {{ transaction.debt_reduction_amount }} ₽</p>{% endif %}
-    {% else %}
-    <p><strong>Категория:</strong> {{ transaction.category|default:"—" }}</p>
     {% endif %}
     <p><strong>Проект:</strong> {{ transaction.project|default:"—" }}</p>
     <p>{{ transaction.notes|linebreaks|default:"" }}</p>

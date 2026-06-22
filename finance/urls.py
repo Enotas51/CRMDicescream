@@ -23,4 +23,5 @@ urlpatterns = [
   path('utilities/<int:pk>/', views.UtilitiesOperationDetailView.as_view(), name='utilities_detail'),
   path('utilities/<int:pk>/edit/', views.UtilitiesOperationUpdateView.as_view(), name='utilities_edit'),
   path('utilities/<int:pk>/delete/', views.UtilitiesOperationDeleteView.as_view(), name='utilities_delete'),
+  path('export/', views.FinanceExportView.as_view(), name='export'),
 ]

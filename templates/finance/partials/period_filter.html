@@ -1,0 +1,44 @@
+{% load static %}
+<form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3 finance-period-filter">
+  <div>
+    <label class="form-label small text-muted mb-1">Период</label>
+    <select name="month" class="form-select form-select-sm" onchange="this.form.submit()">
+      {% for choice in month_choices %}
+      <option value="{{ choice.month }}" data-year="{{ choice.year }}"
+        {% if not period_all_time and filter_year == choice.year and filter_month == choice.month %}selected{% endif %}>
+        {{ choice.label }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <input type="hidden" name="year" id="finance-filter-year" value="{{ filter_year|default:'' }}">
+  {% if request.GET.type %}<input type="hidden" name="type" value="{{ request.GET.type }}">{% endif %}
+  {% if request.GET.project %}<input type="hidden" name="project" value="{{ request.GET.project }}">{% endif %}
+  <div class="d-flex gap-2 flex-wrap">
+    {% if not period_all_time %}
+    <a href="?all=1{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.project %}&project={{ request.GET.project }}{% endif %}"
+       class="btn btn-outline-secondary btn-sm">Всё время</a>
+    {% else %}
+    <a href="?year={{ filter_year }}&month={{ filter_month }}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.project %}&project={{ request.GET.project }}{% endif %}"
+       class="btn btn-outline-secondary btn-sm">Текущий месяц</a>
+    {% endif %}
+    <a href="{% url export_url %}{% if export_query %}?{{ export_query }}{% endif %}"
+       class="btn btn-success btn-sm">
+      <i class="bi bi-file-earmark-excel"></i> Excel
+    </a>
+  </div>
+</form>
+<script>
+(function () {
+  var form = document.querySelector('.finance-period-filter');
+  if (!form) return;
+  var monthSelect = form.querySelector('select[name="month"]');
+  var yearInput = form.querySelector('#finance-filter-year');
+  function syncYear() {
+    var opt = monthSelect.options[monthSelect.selectedIndex];
+    if (opt && yearInput) yearInput.value = opt.getAttribute('data-year') || '';
+  }
+  monthSelect.addEventListener('change', syncYear);
+  syncYear();
+})();
+</script>

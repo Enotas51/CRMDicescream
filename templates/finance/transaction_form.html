@@ -76,8 +76,6 @@ document.addEventListener('DOMContentLoaded', function () {
       var wrap = document.querySelector('.field-wrap.field-' + name);
       if (wrap) wrap.style.display = isRepayment ? '' : 'none';
     });
-    var catWrap = document.querySelector('.field-wrap.field-category');
-    if (catWrap) catWrap.style.display = isRepayment ? 'none' : '';
     if (!isRepayment) {
       if (debtInfo) debtInfo.classList.add('d-none');
       if (debtorInfo) debtorInfo.classList.add('d-none');

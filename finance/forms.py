@@ -41,7 +41,7 @@ class TransactionForm(forms.ModelForm):
   class Meta:
     model = Transaction
     fields = [
-      'title', 'amount', 'transaction_type', 'category',
+      'title', 'amount', 'transaction_type',
       'project', 'debt', 'debt_debtor', 'skip_utilities',
       'date', 'notes',
     ]
@@ -49,7 +49,6 @@ class TransactionForm(forms.ModelForm):
       'title': forms.TextInput(attrs={'class': 'form-control'}),
       'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
       'transaction_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_transaction_type'}),
-      'category': forms.Select(attrs={'class': 'form-select'}),
       'project': forms.Select(attrs={'class': 'form-select'}),
       'debt': forms.Select(attrs={'class': 'form-select', 'id': 'id_debt'}),
       'debt_debtor': forms.Select(attrs={'class': 'form-select', 'id': 'id_debt_debtor'}),
@@ -61,7 +60,6 @@ class TransactionForm(forms.ModelForm):
       'title': 'Название',
       'amount': 'Сумма',
       'transaction_type': 'Тип',
-      'category': 'Категория',
       'project': 'Проект',
       'debt': 'Задолженность',
       'debt_debtor': 'Должник',
@@ -80,7 +78,6 @@ class TransactionForm(forms.ModelForm):
     self.fields['debt_debtor'].queryset = DebtDebtor.objects.none()
     self.fields['debt_debtor'].required = False
     self.fields['debt_debtor'].empty_label = '— выберите должника —'
-    self.fields['category'].required = False
     self.fields['skip_utilities'].required = False
 
     if self.instance.pk and self.instance.transaction_type != TransactionType.DEBT_REPAYMENT:
