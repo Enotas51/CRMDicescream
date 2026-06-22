@@ -9,6 +9,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 
 from accounts.permissions import ApprovedUserMixin, CanEditMixin, user_can_edit_object
 from tasks.models import Task
+from .event_copy import create_event_copies, parse_copy_dates
 from .forms import EventForm
 from .models import Event
 
@@ -27,50 +28,41 @@ class CalendarView(ApprovedUserMixin, ListView):
     year = int(self.request.GET.get('year', today.year))
     month = int(self.request.GET.get('month', today.month))
 
-    first_day = date(year, month, 1)
-    if month == 12:
-      last_day = date(year + 1, 1, 1) - timedelta(days=1)
-    else:
-      last_day = date(year, month + 1, 1) - timedelta(days=1)
-
-    events = Event.objects.filter(
-      start__date__gte=first_day,
-      start__date__lte=last_day,
-    )
-    tasks = Task.objects.filter(
-      due_date__gte=first_day,
-      due_date__lte=last_day,
-    ).exclude(status='done')
-
-    events_by_day = {}
-    for event in events:
-      day = event.start.date().day
-      events_by_day.setdefault(day, []).append(event)
-
-    tasks_by_day = {}
-    for task in tasks:
-      if task.due_date:
-        tasks_by_day.setdefault(task.due_date.day, []).append(task)
-
     cal = cal_module.Calendar(firstweekday=0)
     weeks = cal.monthdatescalendar(year, month)
+    visible_start = weeks[0][0]
+    visible_end = weeks[-1][-1]
+
+    events = Event.objects.filter(
+      start__date__gte=visible_start,
+      start__date__lte=visible_end,
+    )
+    tasks = Task.objects.filter(
+      due_date__gte=visible_start,
+      due_date__lte=visible_end,
+    ).exclude(status='done')
+
+    events_by_date = {}
+    for event in events:
+      day_key = event.start.date()
+      events_by_date.setdefault(day_key, []).append(event)
+
+    tasks_by_date = {}
+    for task in tasks:
+      if task.due_date:
+        tasks_by_date.setdefault(task.due_date, []).append(task)
 
     calendar_weeks = []
     for week in weeks:
       week_data = []
       for day in week:
-        if day.month == month:
-          week_data.append({
-            'date': day,
-            'events': events_by_day.get(day.day, []),
-            'tasks': tasks_by_day.get(day.day, []),
-          })
-        else:
-          week_data.append({
-            'date': day,
-            'events': [],
-            'tasks': [],
-          })
+        week_data.append({
+          'date': day,
+          'in_month': day.month == month,
+          'is_weekend': day.weekday() >= 5,
+          'events': events_by_date.get(day, []),
+          'tasks': tasks_by_date.get(day, []),
+        })
       calendar_weeks.append(week_data)
 
     prev_month = month - 1 or 12
@@ -116,8 +108,20 @@ class EventCreateView(CanEditMixin, CreateView):
 
   def form_valid(self, form):
     form.instance.created_by = self.request.user
-    messages.success(self.request, 'Событие создано.')
-    return super().form_valid(form)
+    response = super().form_valid(form)
+    copies = create_event_copies(
+      self.object,
+      parse_copy_dates(self.request.POST.getlist('copy_date')),
+      self.request.user,
+    )
+    if copies:
+      messages.success(
+        self.request,
+        f'Событие создано и скопировано на {len(copies)} дат(ы).',
+      )
+    else:
+      messages.success(self.request, 'Событие создано.')
+    return response
 
   def get_success_url(self):
     return reverse_lazy('calendar_app:calendar')
@@ -136,8 +140,20 @@ class EventUpdateView(CanEditMixin, UpdateView):
     return super().dispatch(request, *args, **kwargs)
 
   def form_valid(self, form):
-    messages.success(self.request, 'Событие обновлено.')
-    return super().form_valid(form)
+    response = super().form_valid(form)
+    copies = create_event_copies(
+      self.object,
+      parse_copy_dates(self.request.POST.getlist('copy_date')),
+      self.request.user,
+    )
+    if copies:
+      messages.success(
+        self.request,
+        f'Событие обновлено и скопировано на {len(copies)} дат(ы).',
+      )
+    else:
+      messages.success(self.request, 'Событие обновлено.')
+    return response
 
   def get_success_url(self):
     return reverse_lazy('calendar_app:calendar')

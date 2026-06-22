@@ -1,35 +1,77 @@
 {% extends "base.html" %}
 {% block title %}Календарь — {{ month_name }} {{ year }}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h1 class="h3 mb-0">{{ month_name }} {{ year }}</h1>
-    <div class="d-flex gap-2">
-      <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-left"></i></a>
-      <a href="?year={{ today.year }}&month={{ today.month }}" class="btn btn-outline-secondary btn-sm">Сегодня</a>
-      <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-right"></i></a>
-      {% if can_edit %}<a href="{% url 'calendar_app:create' %}" class="btn btn-primary btn-sm">+ Событие</a>{% endif %}
+<div class="container-fluid calendar-page">
+  <div class="calendar-toolbar d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-0">{{ month_name }} {{ year }}</h1>
+      <div class="small text-muted">Классический вид · неделя с понедельника</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <div class="btn-group">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-secondary btn-sm" title="Предыдущий месяц">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+        <a href="?year={{ today.year }}&month={{ today.month }}" class="btn btn-outline-secondary btn-sm">Сегодня</a>
+        <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-secondary btn-sm" title="Следующий месяц">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </div>
+      {% if can_edit %}
+      <a href="{% url 'calendar_app:create' %}" class="btn btn-primary btn-sm">+ Событие</a>
+      {% endif %}
     </div>
   </div>
-  <div class="calendar-grid">
-    <div class="calendar-weekdays">
-      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
-    </div>
-    {% for week in calendar_weeks %}
-    <div class="calendar-week">
-      {% for cell in week %}
-      <div class="calendar-day {% if cell.date.month != month %}other-month{% endif %} {% if cell.date == today %}today{% endif %}">
-        <div class="day-number">{{ cell.date.day }}</div>
-        {% for event in cell.events %}
-        <a href="{% url 'calendar_app:detail' event.pk %}" class="calendar-event" style="background:{{ event.color }}">{{ event.title|truncatechars:18 }}</a>
+
+  <div class="calendar-legend small text-muted mb-2 d-flex gap-3 flex-wrap">
+    <span><span class="calendar-legend-dot calendar-legend-event"></span> Событие</span>
+    <span><span class="calendar-legend-dot calendar-legend-task"></span> Задача</span>
+    <span><span class="calendar-legend-dot calendar-legend-today"></span> Сегодня</span>
+  </div>
+
+  <div class="calendar-classic-wrap">
+    <table class="calendar-classic table table-bordered mb-0">
+      <thead>
+        <tr>
+          <th>Понедельник</th>
+          <th>Вторник</th>
+          <th>Среда</th>
+          <th>Четверг</th>
+          <th>Пятница</th>
+          <th class="calendar-weekend-col">Суббота</th>
+          <th class="calendar-weekend-col">Воскресенье</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in calendar_weeks %}
+        <tr>
+          {% for cell in week %}
+          <td class="calendar-classic-day {% if not cell.in_month %}other-month{% endif %} {% if cell.date == today %}today{% endif %} {% if cell.is_weekend %}weekend{% endif %}">
+            <div class="calendar-day-header">
+              <span class="day-number {% if cell.date == today %}day-number-today{% endif %}">{{ cell.date.day }}</span>
+              {% if not cell.in_month %}
+              <span class="calendar-day-month">{{ cell.date|date:"d.m" }}</span>
+              {% endif %}
+            </div>
+            <div class="calendar-day-body">
+              {% for event in cell.events %}
+              <a href="{% url 'calendar_app:detail' event.pk %}" class="calendar-event" style="--event-color: {{ event.color }}" title="{{ event.title }}">
+                {% if not event.all_day %}<span class="calendar-event-time">{{ event.start|date:"H:i" }}</span>{% endif %}
+                <span class="calendar-event-title">{{ event.title|truncatechars:22 }}</span>
+              </a>
+              {% endfor %}
+              {% for task in cell.tasks %}
+              <a href="{% url 'tasks:detail' task.pk %}" class="calendar-task" title="{{ task.title }}">
+                <i class="bi bi-check2-square"></i> {{ task.title|truncatechars:20 }}
+              </a>
+              {% endfor %}
+            </div>
+          </td>
+          {% endfor %}
+        </tr>
         {% endfor %}
-        {% for task in cell.tasks %}
-        <a href="{% url 'tasks:detail' task.pk %}" class="calendar-task">{{ task.title|truncatechars:16 }}</a>
-        {% endfor %}
-      </div>
-      {% endfor %}
-    </div>
-    {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

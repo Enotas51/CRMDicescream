@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container" style="max-width:720px">
   <h1 class="h4 mb-3">{% if object %}Редактирование события{% else %}Новое событие{% endif %}</h1>
-  <form method="post" class="card card-body">
+  <form method="post" class="card card-body" id="eventForm">
     {% csrf_token %}
     {% for field in form %}
     <div class="mb-3 {% if field.name == 'all_day' %}form-check{% endif %}">
@@ -16,10 +16,80 @@
       {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
     </div>
     {% endfor %}
+
+    <hr class="my-4">
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+      <div>
+        <h2 class="h6 text-muted mb-0">Копировать на другие даты</h2>
+        <span class="small text-muted">Создаст отдельные события с тем же содержимым и временем</span>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-sm" id="addCopyDateRow">
+        <i class="bi bi-plus-lg"></i> Добавить дату
+      </button>
+    </div>
+
+    <div id="copy-date-rows" class="mb-3">
+      <div class="copy-date-row input-group mb-2">
+        <input type="date" name="copy_date" class="form-control copy-date-input">
+        <button type="button" class="btn btn-outline-secondary copy-date-remove" title="Убрать">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="alert alert-info small mb-0">
+      <i class="bi bi-info-circle"></i>
+      Время начала и окончания сохранится таким же, изменится только дата.
+      Дата основного события в список копий не попадёт.
+    </div>
+
+    <hr class="my-4">
+
     <div class="d-flex gap-2">
       <button class="btn btn-primary">Сохранить</button>
       <a href="{% url 'calendar_app:calendar' %}" class="btn btn-outline-secondary">Отмена</a>
     </div>
   </form>
 </div>
+
+<template id="copyDateRowTemplate">
+  <div class="copy-date-row input-group mb-2">
+    <input type="date" name="copy_date" class="form-control copy-date-input">
+    <button type="button" class="btn btn-outline-secondary copy-date-remove" title="Убрать">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var container = document.getElementById('copy-date-rows');
+  var template = document.getElementById('copyDateRowTemplate');
+  var addBtn = document.getElementById('addCopyDateRow');
+
+  function bindRemove(btn) {
+    btn.addEventListener('click', function () {
+      var rows = container.querySelectorAll('.copy-date-row');
+      if (rows.length <= 1) {
+        rows[0].querySelector('.copy-date-input').value = '';
+        return;
+      }
+      btn.closest('.copy-date-row').remove();
+    });
+  }
+
+  container.querySelectorAll('.copy-date-remove').forEach(bindRemove);
+
+  addBtn.addEventListener('click', function () {
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = template.innerHTML.trim();
+    var row = wrapper.firstElementChild;
+    container.appendChild(row);
+    bindRemove(row.querySelector('.copy-date-remove'));
+    row.querySelector('.copy-date-input').focus();
+  });
+});
+</script>
 {% endblock %}
