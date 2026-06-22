@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{% if object %}Редактирование проекта{% else %}Новый проект{% endif %}{% endblock %}
 {% block content %}
-<div class="container" style="max-width:720px">
+<div class="container" style="max-width:960px">
   <h1 class="h4 mb-3">{% if object %}Редактирование: {{ object.name }}{% else %}Новый проект{% endif %}</h1>
-  <form method="post" class="card card-body">
+  <form method="post" class="card card-body" id="projectForm">
     {% csrf_token %}
+
+    <h2 class="h6 text-muted mb-3">Основное</h2>
     {% for field in form %}
     <div class="mb-3">
       <label class="form-label">{{ field.label }}</label>
@@ -12,10 +14,209 @@
       {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
     </div>
     {% endfor %}
+
+    <hr class="my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h2 class="h6 text-muted mb-0">Оборудование</h2>
+        <span class="small text-muted">OZON: ссылка, буфер или вставка текста</span>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-sm" id="addEquipmentRow">
+        <i class="bi bi-plus-lg"></i> Добавить позицию
+      </button>
+    </div>
+
+    {{ equipment_formset.management_form }}
+    {% if equipment_formset.non_form_errors %}
+    <div class="alert alert-danger">{{ equipment_formset.non_form_errors }}</div>
+    {% endif %}
+
+    <div id="equipment-forms">
+      {% for equipment_form in equipment_formset %}
+      {% include "projects/partials/equipment_row.html" with equipment_form=equipment_form %}
+      {% endfor %}
+    </div>
+
+    <div class="alert alert-info small">
+      <i class="bi bi-info-circle"></i>
+      <strong>OZON блокирует автозагрузку с сервера.</strong>
+      Надёжный способ: откройте товар на OZON, выделите название и цену → скопируйте → нажмите
+      <strong>«Из буфера»</strong> или <strong>«Вставить текст»</strong>.
+      Кнопка «Подтянуть» попробует автоматически и подставит название из ссылки, если цену получить не удастся.
+    </div>
+
     <div class="d-flex gap-2">
       <button class="btn btn-primary">Сохранить</button>
-      <a href="{% url 'projects:list' %}" class="btn btn-outline-secondary">Отмена</a>
+      <a href="{% if object %}{% url 'projects:detail' object.pk %}{% else %}{% url 'projects:list' %}{% endif %}" class="btn btn-outline-secondary">Отмена</a>
     </div>
   </form>
 </div>
+
+<template id="equipmentEmptyRow">
+  {% with equipment_form=equipment_formset.empty_form %}
+  {% include "projects/partials/equipment_row.html" %}
+  {% endwith %}
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var container = document.getElementById('equipment-forms');
+  var totalFormsInput = document.getElementById('id_equipment-TOTAL_FORMS');
+  var emptyTemplate = document.getElementById('equipmentEmptyRow');
+  var fetchUrl = '{% url "projects:ozon_fetch" %}';
+  var csrfToken = document.querySelector('#projectForm input[name=csrfmiddlewaretoken]').value;
+
+  function showStatus(el, text, tone) {
+    if (!el) return;
+    el.classList.remove('d-none', 'text-success', 'text-danger', 'text-warning', 'text-muted');
+    if (tone === 'success') el.classList.add('text-success');
+    else if (tone === 'danger') el.classList.add('text-danger');
+    else if (tone === 'warning') el.classList.add('text-warning');
+    else el.classList.add('text-muted');
+    el.textContent = text;
+  }
+
+  function applyOzonData(row, data) {
+    var nameField = row.querySelector('.equipment-name');
+    var priceField = row.querySelector('.equipment-price');
+    var urlField = row.querySelector('.equipment-ozon-url');
+    var statusEl = row.querySelector('.ozon-fetch-status');
+    if (nameField && data.name) nameField.value = data.name;
+    if (priceField && data.price) priceField.value = data.price;
+    if (urlField && data.ozon_url) urlField.value = data.ozon_url;
+    if (data.warning) {
+      showStatus(statusEl, data.warning, 'warning');
+    } else if (data.name && data.price) {
+      showStatus(statusEl, 'Данные получены', 'success');
+    } else if (data.name) {
+      showStatus(statusEl, 'Название подставлено. Укажите цену вручную.', 'warning');
+    }
+  }
+
+  function requestOzon(bodyParams, row, button) {
+    var statusEl = row.querySelector('.ozon-fetch-status');
+    var body = new URLSearchParams();
+    Object.keys(bodyParams).forEach(function (key) {
+      body.append(key, bodyParams[key]);
+    });
+    if (button) button.disabled = true;
+    showStatus(statusEl, 'Обработка...', 'muted');
+    return fetch(fetchUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+      },
+      body: body.toString(),
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          return { ok: response.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          throw new Error(result.data.error || 'Не удалось получить данные');
+        }
+        applyOzonData(row, result.data);
+      })
+      .catch(function (error) {
+        showStatus(statusEl, error.message, 'danger');
+      })
+      .finally(function () {
+        if (button) button.disabled = false;
+      });
+  }
+
+  function bindRow(row) {
+    if (row.dataset.bound) return;
+    row.dataset.bound = '1';
+
+    var fetchBtn = row.querySelector('.ozon-fetch-btn');
+    var openBtn = row.querySelector('.ozon-open-btn');
+    var clipboardBtn = row.querySelector('.ozon-clipboard-btn');
+    var pasteToggleBtn = row.querySelector('.ozon-paste-toggle-btn');
+    var pasteParseBtn = row.querySelector('.ozon-paste-parse-btn');
+    var pasteBox = row.querySelector('.ozon-paste-box');
+    var pasteField = row.querySelector('.ozon-paste-field');
+    var urlField = row.querySelector('.equipment-ozon-url');
+
+    if (fetchBtn) {
+      fetchBtn.addEventListener('click', function () {
+        var url = urlField ? urlField.value.trim() : '';
+        if (!url) {
+          showStatus(row.querySelector('.ozon-fetch-status'), 'Укажите ссылку OZON', 'danger');
+          return;
+        }
+        requestOzon({ url: url }, row, fetchBtn);
+      });
+    }
+
+    if (openBtn) {
+      openBtn.addEventListener('click', function () {
+        var url = urlField ? urlField.value.trim() : '';
+        if (!url) {
+          showStatus(row.querySelector('.ozon-fetch-status'), 'Сначала вставьте ссылку OZON', 'danger');
+          return;
+        }
+        window.open(url, '_blank', 'noopener');
+      });
+    }
+
+    if (clipboardBtn) {
+      clipboardBtn.addEventListener('click', function () {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          showStatus(row.querySelector('.ozon-fetch-status'), 'Буфер недоступен. Используйте «Вставить текст».', 'danger');
+          return;
+        }
+        navigator.clipboard.readText()
+          .then(function (text) {
+            if (!text || !text.trim()) {
+              throw new Error('Буфер обмена пуст. Скопируйте название и цену с OZON.');
+            }
+            return requestOzon({ text: text.trim() }, row, clipboardBtn);
+          })
+          .catch(function (error) {
+            showStatus(row.querySelector('.ozon-fetch-status'), error.message || 'Не удалось прочитать буфер', 'danger');
+          });
+      });
+    }
+
+    if (pasteToggleBtn && pasteBox) {
+      pasteToggleBtn.addEventListener('click', function () {
+        pasteBox.classList.toggle('d-none');
+        if (!pasteBox.classList.contains('d-none') && pasteField) {
+          pasteField.focus();
+        }
+      });
+    }
+
+    if (pasteParseBtn && pasteField) {
+      pasteParseBtn.addEventListener('click', function () {
+        var text = pasteField.value.trim();
+        if (!text) {
+          showStatus(row.querySelector('.ozon-fetch-status'), 'Вставьте скопированный текст с OZON', 'danger');
+          return;
+        }
+        requestOzon({ text: text }, row, pasteParseBtn);
+      });
+    }
+  }
+
+  container.querySelectorAll('.equipment-row').forEach(bindRow);
+
+  document.getElementById('addEquipmentRow').addEventListener('click', function () {
+    var index = parseInt(totalFormsInput.value, 10);
+    var html = emptyTemplate.innerHTML.replace(/__prefix__/g, index);
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = html.trim();
+    var row = wrapper.firstElementChild;
+    container.appendChild(row);
+    totalFormsInput.value = index + 1;
+    bindRow(row);
+  });
+});
+</script>
 {% endblock %}

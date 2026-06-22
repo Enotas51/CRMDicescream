@@ -1,5 +1,8 @@
+from decimal import Decimal
+
 from django.db import models
 from django.conf import settings
+from django.db.models import F, Sum
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
@@ -52,3 +55,38 @@ class Project(TimeStampedModel):
   @property
   def completed_task_count(self):
     return self.tasks.filter(status='done').count()
+
+  @property
+  def equipment_total(self):
+    total = self.equipment.aggregate(
+      total=Sum(F('price') * F('quantity')),
+    )['total']
+    return total or Decimal('0')
+
+
+class ProjectEquipment(models.Model):
+  project = models.ForeignKey(
+    Project,
+    on_delete=models.CASCADE,
+    related_name='equipment',
+    verbose_name=_('Проект'),
+  )
+  name = models.CharField(_('Наименование'), max_length=500)
+  price = models.DecimalField(_('Цена'), max_digits=12, decimal_places=2)
+  quantity = models.PositiveIntegerField(_('Количество'), default=1)
+  is_ordered = models.BooleanField(_('Заказал'), default=False)
+  is_received = models.BooleanField(_('Получил'), default=False)
+  ozon_url = models.URLField(_('Ссылка OZON'), blank=True, max_length=1000)
+  ozon_product_id = models.CharField(_('ID товара OZON'), max_length=32, blank=True)
+
+  class Meta:
+    verbose_name = _('Оборудование')
+    verbose_name_plural = _('Оборудование')
+    ordering = ['id']
+
+  def __str__(self):
+    return f'{self.name} × {self.quantity}'
+
+  @property
+  def total_price(self):
+    return self.price * self.quantity

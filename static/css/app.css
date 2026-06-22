@@ -797,8 +797,9 @@ form .form-label {
   color: #1e1b4b;
 }
 
-/* --- Debtor rows in forms --- */
-.debtor-row {
+/* --- Debtor / equipment rows in forms --- */
+.debtor-row,
+.equipment-row {
   background: rgba(15, 23, 42, 0.5) !important;
   border-color: var(--ds-border) !important;
 }

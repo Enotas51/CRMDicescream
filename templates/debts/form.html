@@ -4,7 +4,7 @@
 <div class="container" style="max-width:800px">
   <h1 class="h4 mb-3">{% if object %}Редактирование задолженности{% else %}Новая задолженность{% endif %}</h1>
 
-  <form method="post" class="card card-body">
+  <form method="post" class="card card-body" id="debtForm">
     {% csrf_token %}
 
     <h2 class="h6 text-muted mb-3">Основное</h2>
@@ -17,9 +17,14 @@
     {% endfor %}
 
     <hr class="my-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2 class="h6 text-muted mb-0">Должники</h2>
-      <span class="small text-muted">У каждого — своя сумма долга</span>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h2 class="h6 text-muted mb-0">Должники</h2>
+        <span class="small text-muted">У каждого — своя сумма долга</span>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-sm" id="addDebtorRow">
+        <i class="bi bi-plus-lg"></i> Добавить должника
+      </button>
     </div>
 
     {{ debtor_formset.management_form }}
@@ -29,34 +34,7 @@
 
     <div id="debtor-forms">
       {% for debtor_form in debtor_formset %}
-      <div class="debtor-row border rounded p-3 mb-3 bg-light">
-        {% for hidden in debtor_form.hidden_fields %}{{ hidden }}{% endfor %}
-        <div class="row g-2 align-items-end">
-          <div class="col-md-4">
-            <label class="form-label">{{ debtor_form.debtor_user.label }}</label>
-            {{ debtor_form.debtor_user }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">{{ debtor_form.debtor_name.label }}</label>
-            {{ debtor_form.debtor_name }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">{{ debtor_form.amount.label }}</label>
-            {{ debtor_form.amount }}
-          </div>
-          <div class="col-md-1">
-            {% if debtor_formset.can_delete %}
-            <div class="form-check">
-              {{ debtor_form.DELETE }}
-              <label class="form-check-label small">Удал.</label>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-        {% if debtor_form.errors %}
-        <div class="text-danger small mt-2">{{ debtor_form.errors }}</div>
-        {% endif %}
-      </div>
+      {% include "debts/partials/debtor_row.html" with debtor_form=debtor_form %}
       {% endfor %}
     </div>
 
@@ -74,21 +52,46 @@
     </div>
   </form>
 </div>
+
+<template id="debtorEmptyRow">
+  {% with debtor_form=debtor_formset.empty_form %}
+  {% include "debts/partials/debtor_row.html" %}
+  {% endwith %}
+</template>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.debtor-row').forEach(function (row) {
+  var container = document.getElementById('debtor-forms');
+  var totalFormsInput = document.getElementById('id_debtors-TOTAL_FORMS');
+  var emptyTemplate = document.getElementById('debtorEmptyRow');
+  var addBtn = document.getElementById('addDebtorRow');
+
+  function bindDebtorRow(row) {
     var userField = row.querySelector('.debtor-user');
     var nameField = row.querySelector('.debtor-name');
-    if (!userField || !nameField) return;
+    if (!userField || !nameField || userField.dataset.bound) return;
+    userField.dataset.bound = '1';
     userField.addEventListener('change', function () {
       var text = userField.options[userField.selectedIndex].text;
       if (userField.value && text !== '— не выбран —') {
         nameField.value = text.replace(/^@\s*/, '');
       }
     });
+  }
+
+  container.querySelectorAll('.debtor-row').forEach(bindDebtorRow);
+
+  addBtn.addEventListener('click', function () {
+    var index = parseInt(totalFormsInput.value, 10);
+    var html = emptyTemplate.innerHTML.replace(/__prefix__/g, index);
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = html.trim();
+    var row = wrapper.firstElementChild;
+    container.appendChild(row);
+    totalFormsInput.value = index + 1;
+    bindDebtorRow(row);
   });
 });
 </script>
