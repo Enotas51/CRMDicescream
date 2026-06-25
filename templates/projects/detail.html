@@ -7,9 +7,9 @@
       <h1 class="h3 mb-1" style="border-left:4px solid {{ project.color }}; padding-left:12px">{{ project.name }}</h1>
       <span class="badge bg-secondary">{{ project.get_status_display }}</span>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if can_edit or user.is_admin %}
-      <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-secondary btn-sm">Полное редактирование</a>
       {% endif %}
       {% if user.is_admin %}
       <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
@@ -17,19 +17,60 @@
       <a href="{% url 'tasks:create' %}?project={{ project.pk }}" class="btn btn-primary btn-sm">+ Задача</a>
     </div>
   </div>
+
   <div class="row g-3">
     <div class="col-lg-8">
+      {% if can_edit %}
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-sliders"></i> Управление проектом</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'projects:quick_update' project.pk %}">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ quick_form.status.label }}</label>
+                {{ quick_form.status }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ quick_form.budget.label }}</label>
+                {{ quick_form.budget }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label text-muted small mb-0">Баланс для заказов</label>
+                <div class="form-control-plaintext fw-semibold {% if main_balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                  {{ main_balance|floatformat:2 }} ₽
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ quick_form.start_date.label }}</label>
+                {{ quick_form.start_date }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ quick_form.end_date.label }}</label>
+                {{ quick_form.end_date }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ quick_form.description.label }}</label>
+                {{ quick_form.description }}
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm mt-3">Сохранить</button>
+          </form>
+        </div>
+      </div>
+      {% else %}
       <div class="card mb-3"><div class="card-body">{{ project.description|linebreaks|default:"Без описания" }}</div></div>
+      {% endif %}
 
       <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
           <span><i class="bi bi-box-seam"></i> Оборудование</span>
           {% if equipment %}
           <span class="small text-muted">Итого: {{ equipment_total|floatformat:2 }} ₽</span>
           {% endif %}
         </div>
         <div class="table-responsive">
-          <table class="table mb-0">
+          <table class="table mb-0 align-middle project-equipment-table">
             <thead>
               <tr>
                 <th>Наименование</th>
@@ -38,11 +79,59 @@
                 <th class="text-end">Сумма</th>
                 <th class="text-center">Заказал</th>
                 <th class="text-center">Получил</th>
+                {% if can_edit %}<th></th>{% endif %}
               </tr>
             </thead>
             <tbody>
               {% for item in equipment %}
               <tr>
+                {% if can_edit %}
+                <td style="min-width:200px">
+                  <input type="text" name="name" value="{{ item.name }}" form="equipment-form-{{ item.pk }}" class="form-control form-control-sm" required>
+                  <input type="url" name="ozon_url" value="{{ item.ozon_url }}" form="equipment-form-{{ item.pk }}" class="form-control form-control-sm mt-1" placeholder="Ссылка OZON">
+                  {% if item.ozon_url %}
+                  <a href="{{ item.ozon_url }}" target="_blank" rel="noopener" class="small">Открыть OZON</a>
+                  {% endif %}
+                  {% if item.order_transaction_id %}
+                  <div class="small text-muted mt-1">
+                    <i class="bi bi-cash-stack"></i> Списано с баланса
+                    <a href="{% url 'finance:transaction_detail' item.order_transaction_id %}" class="text-decoration-none">→</a>
+                  </div>
+                  {% endif %}
+                </td>
+                <td class="text-end" style="width:110px">
+                  <input type="number" name="price" value="{{ item.price }}" form="equipment-form-{{ item.pk }}" step="0.01" min="0" class="form-control form-control-sm text-end" required>
+                </td>
+                <td class="text-center" style="width:80px">
+                  <input type="number" name="quantity" value="{{ item.quantity }}" form="equipment-form-{{ item.pk }}" min="1" class="form-control form-control-sm text-center" required>
+                </td>
+                <td class="text-end" style="width:100px">{{ item.total_price|floatformat:2 }} ₽</td>
+                <td class="text-center" style="width:90px">
+                  <form method="post" action="{% url 'projects:equipment_toggle_ordered' project.pk item.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="checkbox" name="is_ordered" class="form-check-input" {% if item.is_ordered %}checked{% endif %}
+                      onchange="this.form.submit()" title="Списать сумму с баланса при заказе">
+                  </form>
+                </td>
+                <td class="text-center" style="width:90px">
+                  <form method="post" action="{% url 'projects:equipment_toggle_received' project.pk item.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="checkbox" name="is_received" class="form-check-input" {% if item.is_received %}checked{% endif %}
+                      onchange="this.form.submit()">
+                  </form>
+                </td>
+                <td class="text-end text-nowrap" style="width:120px">
+                  <form method="post" action="{% url 'projects:equipment_update' project.pk item.pk %}" id="equipment-form-{{ item.pk }}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-primary btn-sm" title="Сохранить"><i class="bi bi-check-lg"></i></button>
+                  </form>
+                  <form method="post" action="{% url 'projects:equipment_delete' project.pk item.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Удалить"
+                      onclick="return confirm('Удалить позицию?')"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+                {% else %}
                 <td>
                   {{ item.name }}
                   {% if item.ozon_url %}
@@ -58,13 +147,100 @@
                 <td class="text-center">
                   {% if item.is_received %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<span class="text-muted">—</span>{% endif %}
                 </td>
+                {% endif %}
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="text-muted">Оборудование не добавлено</td></tr>
+              <tr><td colspan="{% if can_edit %}7{% else %}6{% endif %}" class="text-muted">Оборудование не добавлено</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+
+        {% if can_edit %}
+        <div class="card-body border-top">
+          <h3 class="h6 text-muted mb-3">Добавить оборудование</h3>
+          <form method="post" action="{% url 'projects:equipment_add' project.pk %}" id="projectEquipmentAddForm">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-4">
+                <label class="form-label small">{{ equipment_add_form.name.label }}</label>
+                {{ equipment_add_form.name }}
+              </div>
+              <div class="col-md-3 col-lg-2">
+                <label class="form-label small">{{ equipment_add_form.price.label }}</label>
+                {{ equipment_add_form.price }}
+              </div>
+              <div class="col-md-3 col-lg-2">
+                <label class="form-label small">{{ equipment_add_form.quantity.label }}</label>
+                {{ equipment_add_form.quantity }}
+              </div>
+              <div class="col-lg-3">
+                <label class="form-label small">{{ equipment_add_form.ozon_url.label }}</label>
+                {{ equipment_add_form.ozon_url }}
+              </div>
+              <div class="col-lg-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i></button>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+              <button type="button" class="btn btn-outline-success btn-sm ozon-clipboard-btn-detail">
+                <i class="bi bi-clipboard"></i> Из буфера OZON
+              </button>
+              <span class="small text-muted align-self-center ozon-fetch-status-detail"></span>
+            </div>
+          </form>
+          <p class="small text-muted mb-0 mt-2">
+            При отметке «Заказал» сумма позиции автоматически списывается с основного баланса.
+          </p>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-paperclip"></i> Файлы</span>
+          {% if project_files %}<span class="small text-muted">{{ project_files|length }}</span>{% endif %}
+        </div>
+        {% if can_edit %}
+        <div class="card-body border-bottom">
+          <form method="post" action="{% url 'projects:file_upload' project.pk %}" enctype="multipart/form-data" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-5">
+              <label class="form-label small">{{ file_form.file.label }}</label>
+              {{ file_form.file }}
+            </div>
+            <div class="col-md-5">
+              <label class="form-label small">{{ file_form.name.label }}</label>
+              {{ file_form.name }}
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary btn-sm w-100">Загрузить</button>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+        <ul class="list-group list-group-flush">
+          {% for f in project_files %}
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <div class="text-truncate">
+              <a href="{{ f.file.url }}" target="_blank" rel="noopener" class="text-decoration-none">
+                <i class="bi bi-file-earmark"></i> {{ f.display_name }}
+              </a>
+              <div class="small text-muted">{{ f.created_at|date:"d.m.Y H:i" }}{% if f.created_by %} · {{ f.created_by.username }}{% endif %}</div>
+            </div>
+            {% if can_edit %}
+            <form method="post" action="{% url 'projects:file_delete' project.pk f.pk %}" class="flex-shrink-0">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить файл?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">Файлов нет</li>
+          {% endfor %}
+        </ul>
       </div>
 
       <div class="card">
@@ -81,17 +257,67 @@
         </ul>
       </div>
     </div>
+
     <div class="col-lg-4">
-      <div class="card">
+      <div class="card mb-3">
         <div class="card-body">
           <p><strong>Бюджет:</strong> {{ project.budget }} ₽</p>
+          <p><strong>Оборудование:</strong> {{ equipment_total|floatformat:2 }} ₽</p>
           <p><strong>Начало:</strong> {{ project.start_date|date:"d.m.Y"|default:"—" }}</p>
           <p><strong>Окончание:</strong> {{ project.end_date|date:"d.m.Y"|default:"—" }}</p>
           <p><strong>Участники:</strong></p>
           <ul class="mb-0">{% for m in project.members.all %}<li>{{ m.username }}</li>{% empty %}<li class="text-muted">—</li>{% endfor %}</ul>
         </div>
       </div>
+      {% if not can_edit and project.description %}
+      <div class="card">
+        <div class="card-header">Описание</div>
+        <div class="card-body">{{ project.description|linebreaks }}</div>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if can_edit %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var fetchUrl = '{% url "projects:ozon_fetch" %}';
+  var csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+  var clipboardBtn = document.querySelector('.ozon-clipboard-btn-detail');
+  var statusEl = document.querySelector('.ozon-fetch-status-detail');
+  var form = document.getElementById('projectEquipmentAddForm');
+  if (!clipboardBtn || !form) return;
+
+  clipboardBtn.addEventListener('click', function () {
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      if (statusEl) statusEl.textContent = 'Буфер недоступен.';
+      return;
+    }
+    navigator.clipboard.readText().then(function (text) {
+      if (!text || !text.trim()) throw new Error('Буфер пуст');
+      var body = new URLSearchParams({ text: text.trim() });
+      return fetch(fetchUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrfToken },
+        body: body.toString(),
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); });
+    }).then(function (result) {
+      if (!result.ok) throw new Error(result.data.error || 'Ошибка');
+      var nameField = form.querySelector('[name=name]');
+      var priceField = form.querySelector('[name=price]');
+      var urlField = form.querySelector('[name=ozon_url]');
+      if (nameField && result.data.name) nameField.value = result.data.name;
+      if (priceField && result.data.price) priceField.value = result.data.price;
+      if (urlField && result.data.ozon_url) urlField.value = result.data.ozon_url;
+      if (statusEl) statusEl.textContent = 'Данные из OZON подставлены';
+    }).catch(function (err) {
+      if (statusEl) statusEl.textContent = err.message || 'Не удалось разобрать буфер';
+    });
+  });
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -9,6 +9,10 @@ from django.utils.translation import gettext_lazy as _
 from core.models import TimeStampedModel
 
 
+def project_file_upload_to(instance, filename):
+  return f'projects/{instance.project_id}/{filename}'
+
+
 class ProjectStatus(models.TextChoices):
   DRAFT = 'draft', _('Черновик')
   ACTIVE = 'active', _('В работе')
@@ -78,6 +82,14 @@ class ProjectEquipment(models.Model):
   is_received = models.BooleanField(_('Получил'), default=False)
   ozon_url = models.URLField(_('Ссылка OZON'), blank=True, max_length=1000)
   ozon_product_id = models.CharField(_('ID товара OZON'), max_length=32, blank=True)
+  order_transaction = models.ForeignKey(
+    'finance.Transaction',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name='equipment_orders',
+    verbose_name=_('Транзакция списания'),
+  )
 
   class Meta:
     verbose_name = _('Оборудование')
@@ -90,3 +102,31 @@ class ProjectEquipment(models.Model):
   @property
   def total_price(self):
     return self.price * self.quantity
+
+
+class ProjectFile(TimeStampedModel):
+  project = models.ForeignKey(
+    Project,
+    on_delete=models.CASCADE,
+    related_name='files',
+    verbose_name=_('Проект'),
+  )
+  file = models.FileField(_('Файл'), upload_to=project_file_upload_to)
+  name = models.CharField(_('Название'), max_length=255, blank=True)
+
+  class Meta:
+    verbose_name = _('Файл проекта')
+    verbose_name_plural = _('Файлы проекта')
+    ordering = ['-created_at']
+
+  def __str__(self):
+    return self.display_name
+
+  @property
+  def display_name(self):
+    return self.name or (self.file.name.split('/')[-1] if self.file else '—')
+
+  def save(self, *args, **kwargs):
+    if not self.name and self.file:
+      self.name = self.file.name.split('/')[-1]
+    super().save(*args, **kwargs)

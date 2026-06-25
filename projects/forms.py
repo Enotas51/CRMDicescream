@@ -1,7 +1,9 @@
 from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
-from .models import Project, ProjectEquipment, ProjectStatus
+from .models import Project, ProjectEquipment, ProjectFile, ProjectStatus
+
+MAX_PROJECT_FILE_SIZE = 25 * 1024 * 1024
 
 
 class ProjectForm(forms.ModelForm):
@@ -37,7 +39,7 @@ class ProjectEquipmentForm(forms.ModelForm):
   class Meta:
     model = ProjectEquipment
     fields = [
-      'name', 'price', 'quantity', 'is_ordered', 'is_received', 'ozon_url',
+      'name', 'price', 'quantity', 'ozon_url',
     ]
     widgets = {
       'name': forms.TextInput(attrs={
@@ -53,8 +55,6 @@ class ProjectEquipmentForm(forms.ModelForm):
         'class': 'form-control equipment-quantity',
         'min': '1',
       }),
-      'is_ordered': forms.CheckboxInput(attrs={'class': 'form-check-input equipment-ordered'}),
-      'is_received': forms.CheckboxInput(attrs={'class': 'form-check-input equipment-received'}),
       'ozon_url': forms.URLInput(attrs={
         'class': 'form-control equipment-ozon-url',
         'placeholder': 'https://www.ozon.ru/product/...',
@@ -64,8 +64,6 @@ class ProjectEquipmentForm(forms.ModelForm):
       'name': 'Наименование',
       'price': 'Цена, ₽',
       'quantity': 'Кол-во',
-      'is_ordered': 'Заказал',
-      'is_received': 'Получил',
       'ozon_url': 'Ссылка OZON',
     }
 
@@ -84,16 +82,12 @@ class ProjectEquipmentForm(forms.ModelForm):
     price = cleaned.get('price')
     ozon_url = (cleaned.get('ozon_url') or '').strip()
     quantity = cleaned.get('quantity') or 1
-    is_ordered = cleaned.get('is_ordered')
-    is_received = cleaned.get('is_received')
 
     has_data = any([
       name,
       price is not None,
       ozon_url,
       quantity and quantity != 1,
-      is_ordered,
-      is_received,
     ])
 
     if not has_data:
@@ -135,3 +129,76 @@ ProjectEquipmentFormSet = inlineformset_factory(
   extra=1,
   can_delete=True,
 )
+
+
+class ProjectQuickUpdateForm(forms.ModelForm):
+  class Meta:
+    model = Project
+    fields = ['status', 'description', 'budget', 'start_date', 'end_date']
+    widgets = {
+      'status': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+      'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+      'budget': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+      'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+      'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+    }
+    labels = {
+      'status': 'Статус',
+      'description': 'Описание',
+      'budget': 'Бюджет, ₽',
+      'start_date': 'Дата начала',
+      'end_date': 'Дата окончания',
+    }
+
+
+class ProjectEquipmentQuickForm(forms.ModelForm):
+  class Meta:
+    model = ProjectEquipment
+    fields = ['name', 'price', 'quantity', 'ozon_url']
+    widgets = {
+      'name': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Наименование'}),
+      'price': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'min': '0'}),
+      'quantity': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '1'}),
+      'ozon_url': forms.URLInput(attrs={
+        'class': 'form-control form-control-sm',
+        'placeholder': 'https://www.ozon.ru/product/...',
+      }),
+    }
+    labels = {
+      'name': 'Наименование',
+      'price': 'Цена, ₽',
+      'quantity': 'Кол-во',
+      'ozon_url': 'Ссылка OZON',
+    }
+
+
+class ProjectEquipmentEditForm(forms.ModelForm):
+  class Meta:
+    model = ProjectEquipment
+    fields = ['name', 'price', 'quantity', 'ozon_url']
+    widgets = {
+      'name': forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
+      'price': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'min': '0'}),
+      'quantity': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '1'}),
+      'ozon_url': forms.URLInput(attrs={'class': 'form-control form-control-sm'}),
+    }
+
+
+class ProjectFileForm(forms.ModelForm):
+  class Meta:
+    model = ProjectFile
+    fields = ['file', 'name']
+    widgets = {
+      'file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+      'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Необязательно'}),
+    }
+    labels = {
+      'file': 'Файл',
+      'name': 'Название',
+    }
+
+  def clean_file(self):
+    uploaded = self.cleaned_data.get('file')
+    if uploaded and uploaded.size > MAX_PROJECT_FILE_SIZE:
+      raise forms.ValidationError('Файл слишком большой (максимум 25 МБ).')
+    return uploaded
