@@ -31,7 +31,11 @@ from .periods import (
   period_label,
   period_query_string,
 )
-from .utilities import compute_utilities_balance
+from .utilities import (
+  InsufficientMainBalanceError,
+  complete_balance_deposit,
+  compute_utilities_balance,
+)
 
 
 def _finance_period_context(request, extra=None):
@@ -334,6 +338,7 @@ class UtilitiesDashboardView(ApprovedUserMixin, ListView):
     ctx.update(_finance_period_context(self.request))
     ctx.update({
       'balances': compute_utilities_balance(),
+      'main_balance': compute_finance_balances()['main_balance'],
       'can_edit': self.request.user.can_edit,
     })
     return ctx
@@ -348,6 +353,7 @@ class UtilitiesOperationCreateView(CanEditMixin, CreateView):
   def get_form_kwargs(self):
     kwargs = super().get_form_kwargs()
     kwargs['balances'] = compute_utilities_balance()
+    kwargs['main_balance'] = compute_finance_balances()['main_balance']
     return kwargs
 
   def get_initial(self):
@@ -357,19 +363,37 @@ class UtilitiesOperationCreateView(CanEditMixin, CreateView):
       from .models import UtilitiesOperationType
       initial['operation_type'] = UtilitiesOperationType.EXPENSE
     elif op_type == 'deposit':
-      from .models import UtilitiesOperationType
+      from .models import UtilitiesOperationType, UtilitiesSource
       initial['operation_type'] = UtilitiesOperationType.DEPOSIT
+      if self.request.GET.get('source') == 'balance':
+        initial['source'] = UtilitiesSource.BALANCE
     return initial
 
   def get_context_data(self, **kwargs):
     ctx = super().get_context_data(**kwargs)
     ctx['balances'] = compute_utilities_balance()
+    ctx['main_balance'] = compute_finance_balances()['main_balance']
     return ctx
 
   def form_valid(self, form):
+    from django.db import transaction as db_transaction
+
+    from .models import UtilitiesOperationType, UtilitiesSource
+
     form.instance.created_by = self.request.user
+    try:
+      with db_transaction.atomic():
+        self.object = form.save()
+        if (
+          self.object.operation_type == UtilitiesOperationType.DEPOSIT
+          and self.object.source == UtilitiesSource.BALANCE
+        ):
+          complete_balance_deposit(self.object, self.request.user)
+    except InsufficientMainBalanceError as exc:
+      messages.error(self.request, str(exc))
+      return self.form_invalid(form)
     messages.success(self.request, 'Операция сохранена.')
-    return super().form_valid(form)
+    return redirect(self.success_url)
 
 
 class UtilitiesOperationDetailView(ApprovedUserMixin, DetailView):
@@ -381,9 +405,14 @@ class UtilitiesOperationDetailView(ApprovedUserMixin, DetailView):
     ctx = super().get_context_data(**kwargs)
     ctx['can_edit'] = (
       user_can_edit_object(self.request.user, self.object)
+      and self.object.source not in (UtilitiesSource.DEBT, UtilitiesSource.BALANCE)
+    )
+    ctx['can_delete'] = (
+      user_can_edit_object(self.request.user, self.object)
       and self.object.source != UtilitiesSource.DEBT
     )
     ctx['is_from_debt'] = self.object.source == UtilitiesSource.DEBT
+    ctx['is_from_balance'] = self.object.source == UtilitiesSource.BALANCE
     return ctx
 
 
@@ -398,6 +427,9 @@ class UtilitiesOperationUpdateView(CanEditMixin, UpdateView):
     if self.object.source == UtilitiesSource.DEBT:
       messages.error(request, 'Операции из погашения задолженности редактируются через финансы.')
       return redirect('finance:utilities_detail', pk=self.object.pk)
+    if self.object.source == UtilitiesSource.BALANCE:
+      messages.error(request, 'Пополнения с баланса нельзя редактировать — удалите и создайте заново.')
+      return redirect('finance:utilities_detail', pk=self.object.pk)
     if not request.user.is_admin and not user_can_edit_object(request.user, self.object):
       messages.error(request, 'Недостаточно прав.')
       return redirect('finance:utilities_detail', pk=self.object.pk)
@@ -406,11 +438,13 @@ class UtilitiesOperationUpdateView(CanEditMixin, UpdateView):
   def get_form_kwargs(self):
     kwargs = super().get_form_kwargs()
     kwargs['balances'] = compute_utilities_balance(exclude_pk=self.object.pk)
+    kwargs['main_balance'] = compute_finance_balances()['main_balance']
     return kwargs
 
   def get_context_data(self, **kwargs):
     ctx = super().get_context_data(**kwargs)
     ctx['balances'] = compute_utilities_balance(exclude_pk=self.object.pk)
+    ctx['main_balance'] = compute_finance_balances()['main_balance']
     return ctx
 
   def form_valid(self, form):

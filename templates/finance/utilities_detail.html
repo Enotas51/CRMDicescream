@@ -4,15 +4,21 @@
 <div class="container" style="max-width:640px">
   <div class="d-flex justify-content-between mb-3">
     <h1 class="h4">{{ operation.title }}</h1>
-    {% if can_edit %}
+    {% if can_edit or can_delete %}
     <div class="d-flex gap-2">
+      {% if can_edit %}
       <a href="{% url 'finance:utilities_edit' operation.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      {% endif %}
+      {% if can_delete %}
       <a href="{% url 'finance:utilities_delete' operation.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+      {% endif %}
     </div>
     {% endif %}
   </div>
   {% if is_from_debt %}
   <div class="alert alert-secondary small">Создано автоматически при погашении задолженности.</div>
+  {% elif is_from_balance %}
+  <div class="alert alert-secondary small">Пополнение с основного баланса. Сумма списана из финансов.</div>
   {% endif %}
   <div class="card card-body">
     <p><strong>Тип:</strong> {{ operation.get_operation_type_display }}</p>
@@ -21,6 +27,7 @@
     <p><strong>Дата:</strong> {{ operation.date|date:"d.m.Y" }}</p>
     {% if operation.debt %}<p><strong>Задолженность:</strong> <a href="{% url 'debts:detail' operation.debt.pk %}">{{ operation.debt.title }}</a></p>{% endif %}
     {% if operation.repayment %}<p><strong>Погашение:</strong> <a href="{% url 'finance:transaction_detail' operation.repayment.pk %}">{{ operation.repayment.title }}</a></p>{% endif %}
+    {% if operation.balance_transaction %}<p><strong>Списание с баланса:</strong> <a href="{% url 'finance:transaction_detail' operation.balance_transaction.pk %}">{{ operation.balance_transaction.title }}</a></p>{% endif %}
     <p>{{ operation.notes|linebreaks|default:"" }}</p>
   </div>
 </div>

@@ -8,6 +8,7 @@
       <a href="{% url 'finance:dashboard' %}" class="btn btn-outline-secondary btn-sm">← Финансы</a>
       {% if can_edit %}
       <a href="{% url 'finance:utilities_create' %}?type=deposit" class="btn btn-primary btn-sm">+ Пополнить</a>
+      <a href="{% url 'finance:utilities_create' %}?type=deposit&source=balance" class="btn btn-outline-primary btn-sm">+ С баланса</a>
       <a href="{% url 'finance:utilities_create' %}?type=expense" class="btn btn-outline-danger btn-sm">− Расход</a>
       {% endif %}
     </div>
@@ -17,7 +18,8 @@
 
   <div class="alert alert-info small">
     <i class="bi bi-info-circle"></i>
-    Отдельный счёт, не связанный с основным балансом. Пополняется извне или автоматически при погашении задолженностей (если указана сумма на коммунальные).
+    Отдельный счёт коммунальных. Пополняется извне, с основного баланса или автоматически при погашении задолженностей.
+    {% if can_edit %}Основной баланс: <strong>{{ main_balance|floatformat:2 }} ₽</strong>.{% endif %}
   </div>
 
   <div class="row g-3 mb-4">
@@ -42,6 +44,14 @@
         <div class="card-body">
           <div class="small text-muted">Извне</div>
           <div class="h5 mb-0">{{ balances.from_external|floatformat:2 }} ₽</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="small text-muted">С баланса</div>
+          <div class="h5 mb-0">{{ balances.from_balance|floatformat:2 }} ₽</div>
         </div>
       </div>
     </div>

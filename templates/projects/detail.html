@@ -182,11 +182,11 @@
                 <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i></button>
               </div>
             </div>
-            <div class="d-flex gap-2 mt-2 flex-wrap">
-              <button type="button" class="btn btn-outline-success btn-sm ozon-clipboard-btn-detail">
-                <i class="bi bi-clipboard"></i> Из буфера OZON
+            <div class="d-flex gap-2 mt-2 flex-wrap align-items-center">
+              <button type="button" class="btn btn-outline-info btn-sm ozon-fetch-btn-detail">
+                <i class="bi bi-cloud-download"></i> Подтянуть
               </button>
-              <span class="small text-muted align-self-center ozon-fetch-status-detail"></span>
+              <span class="small ozon-fetch-status-detail"></span>
             </div>
           </form>
           <p class="small text-muted mb-0 mt-2">
@@ -285,37 +285,64 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var fetchUrl = '{% url "projects:ozon_fetch" %}';
-  var csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
-  var clipboardBtn = document.querySelector('.ozon-clipboard-btn-detail');
+  var csrfToken = document.querySelector('#projectEquipmentAddForm input[name=csrfmiddlewaretoken]').value;
+  var fetchBtn = document.querySelector('.ozon-fetch-btn-detail');
   var statusEl = document.querySelector('.ozon-fetch-status-detail');
   var form = document.getElementById('projectEquipmentAddForm');
-  if (!clipboardBtn || !form) return;
+  if (!fetchBtn || !form) return;
 
-  clipboardBtn.addEventListener('click', function () {
-    if (!navigator.clipboard || !navigator.clipboard.readText) {
-      if (statusEl) statusEl.textContent = 'Буфер недоступен.';
+  function showStatus(text, tone) {
+    if (!statusEl) return;
+    statusEl.classList.remove('text-success', 'text-danger', 'text-warning', 'text-muted');
+    if (tone === 'success') statusEl.classList.add('text-success');
+    else if (tone === 'danger') statusEl.classList.add('text-danger');
+    else if (tone === 'warning') statusEl.classList.add('text-warning');
+    else statusEl.classList.add('text-muted');
+    statusEl.textContent = text;
+  }
+
+  fetchBtn.addEventListener('click', function () {
+    var urlField = form.querySelector('[name=ozon_url]');
+    var url = urlField ? urlField.value.trim() : '';
+    if (!url) {
+      showStatus('Укажите ссылку OZON', 'danger');
       return;
     }
-    navigator.clipboard.readText().then(function (text) {
-      if (!text || !text.trim()) throw new Error('Буфер пуст');
-      var body = new URLSearchParams({ text: text.trim() });
-      return fetch(fetchUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrfToken },
-        body: body.toString(),
-      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); });
-    }).then(function (result) {
-      if (!result.ok) throw new Error(result.data.error || 'Ошибка');
-      var nameField = form.querySelector('[name=name]');
-      var priceField = form.querySelector('[name=price]');
-      var urlField = form.querySelector('[name=ozon_url]');
-      if (nameField && result.data.name) nameField.value = result.data.name;
-      if (priceField && result.data.price) priceField.value = result.data.price;
-      if (urlField && result.data.ozon_url) urlField.value = result.data.ozon_url;
-      if (statusEl) statusEl.textContent = 'Данные из OZON подставлены';
-    }).catch(function (err) {
-      if (statusEl) statusEl.textContent = err.message || 'Не удалось разобрать буфер';
-    });
+    fetchBtn.disabled = true;
+    showStatus('Загрузка...', 'muted');
+    var body = new URLSearchParams({ url: url });
+    fetch(fetchUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+      },
+      body: body.toString(),
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || 'Не удалось получить данные');
+        var nameField = form.querySelector('[name=name]');
+        var priceField = form.querySelector('[name=price]');
+        if (nameField && result.data.name) nameField.value = result.data.name;
+        if (priceField && result.data.price) priceField.value = result.data.price;
+        if (urlField && result.data.ozon_url) urlField.value = result.data.ozon_url;
+        if (result.data.warning) {
+          showStatus(result.data.warning, 'warning');
+        } else if (result.data.name && result.data.price) {
+          showStatus('Данные получены', 'success');
+        } else if (result.data.name) {
+          showStatus('Название подставлено. Укажите цену вручную.', 'warning');
+        } else {
+          showStatus('Данные подставлены частично', 'warning');
+        }
+      })
+      .catch(function (err) {
+        showStatus(err.message || 'Ошибка загрузки', 'danger');
+      })
+      .finally(function () {
+        fetchBtn.disabled = false;
+      });
   });
 });
 </script>

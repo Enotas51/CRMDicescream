@@ -32,12 +32,18 @@ def compute_utilities_balance(exclude_pk=None):
     source=UtilitiesSource.EXTERNAL,
   ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
+  from_balance = qs.filter(
+    operation_type=UtilitiesOperationType.DEPOSIT,
+    source=UtilitiesSource.BALANCE,
+  ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
   return {
     'balance': deposits - expenses,
     'deposits': deposits,
     'expenses': expenses,
     'from_debt': from_debt,
     'from_external': from_external,
+    'from_balance': from_balance,
   }
 
 
@@ -95,3 +101,42 @@ def sync_utilities_from_repayment(transaction):
       op.save(update_fields=['created_by'])
   else:
     UtilitiesOperation.objects.filter(repayment=transaction).delete()
+
+
+class InsufficientMainBalanceError(Exception):
+  def __init__(self, available, required):
+    self.available = available
+    self.required = required
+    super().__init__(
+      f'Недостаточно средств на основном балансе. Доступно: {available} ₽, нужно: {required} ₽.',
+    )
+
+
+def complete_balance_deposit(operation, user):
+  from django.db import transaction as db_transaction
+  from django.utils import timezone
+
+  from .balances import compute_finance_balances
+  from .models import Transaction, TransactionType
+
+  if operation.source != UtilitiesSource.BALANCE or operation.balance_transaction_id:
+    return operation
+
+  amount = operation.amount
+  balances = compute_finance_balances()
+  if amount > balances['main_balance']:
+    raise InsufficientMainBalanceError(balances['main_balance'], amount)
+
+  with db_transaction.atomic():
+    tx = Transaction.objects.create(
+      title=f'На коммунальные: {operation.title}',
+      amount=amount,
+      transaction_type=TransactionType.EXPENSE,
+      project=operation.project,
+      date=operation.date or timezone.localdate(),
+      created_by=user,
+      notes=operation.notes or 'Перевод на счёт коммунальных',
+    )
+    operation.balance_transaction = tx
+    operation.save(update_fields=['balance_transaction'])
+  return operation

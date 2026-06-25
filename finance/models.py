@@ -196,6 +196,7 @@ class UtilitiesOperationType(models.TextChoices):
 
 class UtilitiesSource(models.TextChoices):
   EXTERNAL = 'external', _('Извне')
+  BALANCE = 'balance', _('С основного баланса')
   DEBT = 'debt', _('Из погашения задолженности')
 
 
@@ -237,6 +238,14 @@ class UtilitiesOperation(TimeStampedModel):
     related_name='utilities_credit',
     verbose_name=_('Погашение'),
   )
+  balance_transaction = models.OneToOneField(
+    Transaction,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name='utilities_deposit',
+    verbose_name=_('Списание с баланса'),
+  )
   date = models.DateField(_('Дата'))
   notes = models.TextField(_('Заметки'), blank=True)
 
@@ -250,6 +259,12 @@ class UtilitiesOperation(TimeStampedModel):
 
   def get_absolute_url(self):
     return reverse_lazy('finance:utilities_detail', kwargs={'pk': self.pk})
+
+  def delete(self, *args, **kwargs):
+    tx = self.balance_transaction
+    super().delete(*args, **kwargs)
+    if tx:
+      tx.delete()
 
   @property
   def source_display(self):

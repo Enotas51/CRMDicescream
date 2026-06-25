@@ -164,9 +164,19 @@ class TransactionForm(forms.ModelForm):
 
 
 class UtilitiesOperationForm(forms.ModelForm):
+  source = forms.ChoiceField(
+    label='Источник пополнения',
+    choices=[
+      (UtilitiesSource.EXTERNAL, UtilitiesSource.EXTERNAL.label),
+      (UtilitiesSource.BALANCE, UtilitiesSource.BALANCE.label),
+    ],
+    required=False,
+    widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+  )
+
   class Meta:
     model = UtilitiesOperation
-    fields = ['title', 'amount', 'operation_type', 'project', 'date', 'notes']
+    fields = ['title', 'amount', 'operation_type', 'source', 'project', 'date', 'notes']
     widgets = {
       'title': forms.TextInput(attrs={'class': 'form-control'}),
       'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
@@ -186,36 +196,67 @@ class UtilitiesOperationForm(forms.ModelForm):
 
   def __init__(self, *args, **kwargs):
     self.balances = kwargs.pop('balances', None)
+    self.main_balance = kwargs.pop('main_balance', None)
     super().__init__(*args, **kwargs)
-    if self.instance.pk and self.instance.source == UtilitiesSource.DEBT:
+    locked_sources = (UtilitiesSource.DEBT, UtilitiesSource.BALANCE)
+    if self.instance.pk and self.instance.source in locked_sources:
       for field in self.fields.values():
         field.disabled = True
+    elif self.instance.pk and self.instance.operation_type == UtilitiesOperationType.EXPENSE:
+      self.fields.pop('source', None)
+    else:
+      op_type = None
+      if self.data:
+        op_type = self.data.get('operation_type')
+      elif self.initial.get('operation_type'):
+        op_type = self.initial.get('operation_type')
+      elif self.instance.pk:
+        op_type = self.instance.operation_type
+      if op_type == UtilitiesOperationType.EXPENSE:
+        self.fields.pop('source', None)
+      elif not self.instance.pk and self.initial.get('source'):
+        self.fields['source'].initial = self.initial['source']
 
   def clean(self):
     cleaned = super().clean()
     operation_type = cleaned.get('operation_type')
     amount = cleaned.get('amount')
 
-    if (
-      operation_type == UtilitiesOperationType.EXPENSE
-      and amount
-      and not (self.instance.pk and self.instance.source == UtilitiesSource.DEBT)
-    ):
-      from .utilities import compute_utilities_balance
-      balances = self.balances or compute_utilities_balance(
-        exclude_pk=self.instance.pk if self.instance.pk else None,
-      )
-      if amount > balances['balance']:
-        self.add_error(
-          'amount',
-          f'Недостаточно средств на коммунальных. Доступно: {balances["balance"]} ₽.',
+    if operation_type == UtilitiesOperationType.EXPENSE:
+      cleaned['source'] = ''
+      if (
+        amount
+        and not (self.instance.pk and self.instance.source == UtilitiesSource.DEBT)
+      ):
+        from .utilities import compute_utilities_balance
+        balances = self.balances or compute_utilities_balance(
+          exclude_pk=self.instance.pk if self.instance.pk else None,
         )
+        if amount > balances['balance']:
+          self.add_error(
+            'amount',
+            f'Недостаточно средств на коммунальных. Доступно: {balances["balance"]} ₽.',
+          )
+    elif operation_type == UtilitiesOperationType.DEPOSIT:
+      source = cleaned.get('source') or UtilitiesSource.EXTERNAL
+      cleaned['source'] = source
+      if source == UtilitiesSource.BALANCE and amount:
+        main_balance = self.main_balance
+        if main_balance is None:
+          main_balance = compute_finance_balances()['main_balance']
+        if amount > main_balance:
+          self.add_error(
+            'amount',
+            f'Недостаточно средств на основном балансе. Доступно: {main_balance} ₽.',
+          )
     return cleaned
 
   def save(self, commit=True):
     instance = super().save(commit=False)
-    if instance.operation_type == UtilitiesOperationType.DEPOSIT and not instance.pk:
-      instance.source = UtilitiesSource.EXTERNAL
+    if instance.operation_type == UtilitiesOperationType.EXPENSE:
+      instance.source = ''
+    elif instance.operation_type == UtilitiesOperationType.DEPOSIT and not instance.pk:
+      instance.source = self.cleaned_data.get('source') or UtilitiesSource.EXTERNAL
     if commit:
       instance.save()
     return instance

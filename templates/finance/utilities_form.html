@@ -3,16 +3,37 @@
 {% block content %}
 <div class="container" style="max-width:640px">
   <h1 class="h4 mb-3">{% if object %}Редактирование операции{% else %}Операция (коммунальные){% endif %}</h1>
-  <div class="card card-body py-2 mb-3">
-    <small class="text-muted">Доступно на коммунальных</small>
-    <div class="fw-semibold text-success">{{ balances.balance|floatformat:2 }} ₽</div>
+  <div class="row g-2 mb-3">
+    <div class="col-sm-6">
+      <div class="card card-body py-2">
+        <small class="text-muted">На коммунальных</small>
+        <div class="fw-semibold text-success">{{ balances.balance|floatformat:2 }} ₽</div>
+      </div>
+    </div>
+    <div class="col-sm-6">
+      <div class="card card-body py-2">
+        <small class="text-muted">Основной баланс</small>
+        <div class="fw-semibold {% if main_balance >= 0 %}text-primary{% else %}text-danger{% endif %}">{{ main_balance|floatformat:2 }} ₽</div>
+      </div>
+    </div>
   </div>
-  <form method="post" class="card card-body">
+  <form method="post" class="card card-body" id="utilitiesForm">
     {% csrf_token %}
     {% for field in form %}
-    <div class="mb-3">
+    <div class="mb-3 {% if field.name == 'source' %}utilities-source-field{% endif %}">
       <label class="form-label">{{ field.label }}</label>
+      {% if field.name == 'source' %}
+      <div class="d-flex flex-column gap-2">
+        {% for radio in field %}
+        <div class="form-check">
+          {{ radio.tag }}
+          <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
       {{ field }}
+      {% endif %}
       {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
     </div>
     {% endfor %}
@@ -20,4 +41,19 @@
     <a href="{% url 'finance:utilities' %}" class="btn btn-outline-secondary">Отмена</a>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var typeField = document.getElementById('id_operation_type');
+  var sourceWrap = document.querySelector('.utilities-source-field');
+  if (!typeField || !sourceWrap) return;
+  function toggleSource() {
+    sourceWrap.style.display = typeField.value === 'deposit' ? '' : 'none';
+  }
+  typeField.addEventListener('change', toggleSource);
+  toggleSource();
+});
+</script>
 {% endblock %}
