@@ -224,19 +224,6 @@ class UtilitiesOperationForm(forms.ModelForm):
 
     if operation_type == UtilitiesOperationType.EXPENSE:
       cleaned['source'] = ''
-      if (
-        amount
-        and not (self.instance.pk and self.instance.source == UtilitiesSource.DEBT)
-      ):
-        from .utilities import compute_utilities_balance
-        balances = self.balances or compute_utilities_balance(
-          exclude_pk=self.instance.pk if self.instance.pk else None,
-        )
-        if amount > balances['balance']:
-          self.add_error(
-            'amount',
-            f'Недостаточно средств на коммунальных. Доступно: {balances["balance"]} ₽.',
-          )
     elif operation_type == UtilitiesOperationType.DEPOSIT:
       source = cleaned.get('source') or UtilitiesSource.EXTERNAL
       cleaned['source'] = source

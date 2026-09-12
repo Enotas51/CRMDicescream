@@ -36,7 +36,7 @@
       <div class="card stat-card">
         <div class="card-body">
           <div class="text-muted small">Коммунальные</div>
-          <div class="h4 mb-0 text-success"><a href="{% url 'finance:utilities' %}" class="text-decoration-none text-success">{{ utilities_balance|floatformat:2 }} ₽</a></div>
+          <div class="h4 mb-0 text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}"><a href="{% url 'finance:utilities' %}" class="text-decoration-none text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}">{{ utilities_balance|floatformat:2 }} ₽</a></div>
         </div>
       </div>
     </div>
