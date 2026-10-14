@@ -30,6 +30,7 @@
           <td>
             {% if u.avatar_url %}<img src="{{ u.avatar_url }}" width="28" height="28" class="rounded-circle me-2">{% endif %}
             {{ u.username }}
+            {% if not u.show_in_team %}<span class="badge text-bg-secondary ms-1">Скрыт из команды</span>{% endif %}
           </td>
           <td>{{ u.email }}</td>
           <td>{{ u.get_role_display }}</td>
@@ -52,6 +53,12 @@
             </form>
             {% else %}
             <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-outline-primary">Изменить</a>
+            <form method="post" action="{% url 'accounts:toggle_team_visibility' u.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-secondary" title="{% if u.show_in_team %}Скрыть из команды{% else %}Показать в команде{% endif %}">
+                <i class="bi bi-eye{% if u.show_in_team %}-slash{% endif %}"></i>
+              </button>
+            </form>
             {% endif %}
             {% if u.pk != user.pk %}
             <a href="{% url 'accounts:user_delete' u.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить пользователя" aria-label="Удалить пользователя">

@@ -35,6 +35,7 @@ class User(AbstractUser):
     phone = models.CharField(_('Телефон'), max_length=20, blank=True)
     telegram = models.CharField(_('Telegram'), max_length=64, blank=True)
     gmail = models.EmailField(_('Gmail'), blank=True)
+    show_in_team = models.BooleanField(_('Показывать в команде'), default=True)
     bio = models.TextField(_('Краткая информация'), blank=True)
 
     class Meta:

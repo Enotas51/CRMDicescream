@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 from django.views.generic import DeleteView, ListView, UpdateView
 
 from .forms import ProfileForm, UserApprovalForm
@@ -36,7 +37,10 @@ class TeamView(ApprovedUserMixin, ListView):
   context_object_name = 'team_members'
 
   def get_queryset(self):
-    return User.objects.filter(approval_status=ApprovalStatus.APPROVED).order_by('first_name', 'last_name', 'username')
+    return User.objects.filter(
+      approval_status=ApprovalStatus.APPROVED,
+      show_in_team=True,
+    ).order_by('first_name', 'last_name', 'username')
 
 
 class ProfileView(ApprovedUserMixin, UpdateView):
@@ -69,6 +73,19 @@ def reject_user(request, pk):
   user = get_object_or_404(User, pk=pk)
   user.reject()
   messages.warning(request, f'Пользователь {user.username} отклонён.')
+  return redirect('accounts:user_list')
+
+
+@require_POST
+def toggle_team_visibility(request, pk):
+  if not request.user.is_admin:
+    messages.error(request, 'Недостаточно прав.')
+    return redirect('core:dashboard')
+  user = get_object_or_404(User, pk=pk)
+  user.show_in_team = not user.show_in_team
+  user.save(update_fields=['show_in_team'])
+  action = 'показан в команде' if user.show_in_team else 'скрыт из команды'
+  messages.success(request, f'Пользователь {user.username} {action}.')
   return redirect('accounts:user_list')
 
 

@@ -13,6 +13,7 @@ urlpatterns = [
   path('users/<int:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
   path('users/<int:pk>/approve/', views.approve_user, name='user_approve'),
   path('users/<int:pk>/reject/', views.reject_user, name='user_reject'),
+  path('users/<int:pk>/toggle-team/', views.toggle_team_visibility, name='toggle_team_visibility'),
   path('yandex/login/', yandex.yandex_login_redirect, name='yandex_login'),
   path('yandex/callback/', yandex.yandex_callback, name='yandex_callback'),
 ]

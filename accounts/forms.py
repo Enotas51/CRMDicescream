@@ -22,11 +22,12 @@ class CRMSignupForm(SignupForm):
 class UserApprovalForm(forms.ModelForm):
   class Meta:
     model = User
-    fields = ['role', 'approval_status', 'is_active', 'first_name', 'last_name', 'email', 'phone', 'telegram', 'gmail', 'bio']
+    fields = ['role', 'approval_status', 'is_active', 'show_in_team', 'first_name', 'last_name', 'email', 'phone', 'telegram', 'gmail', 'bio']
     labels = {
       'role': 'Роль',
       'approval_status': 'Статус',
       'is_active': 'Активен',
+      'show_in_team': 'Показывать в команде',
       'first_name': 'Имя',
       'last_name': 'Фамилия',
       'email': 'Email',
