@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -35,6 +37,7 @@ class User(AbstractUser):
     phone = models.CharField(_('Телефон'), max_length=20, blank=True)
     telegram = models.CharField(_('Telegram'), max_length=64, blank=True)
     gmail = models.EmailField(_('Gmail'), blank=True)
+    vk = models.CharField(_('VK'), max_length=128, blank=True)
     show_in_team = models.BooleanField(_('Показывать в команде'), default=True)
     bio = models.TextField(_('Краткая информация'), blank=True)
 
@@ -45,6 +48,26 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.get_full_name() or self.username
+
+    @property
+    def telegram_url(self):
+        if not self.telegram:
+            return ''
+        handle = self.telegram.strip()
+        if handle.startswith('https://t.me/'):
+            return handle
+        return f'https://t.me/{quote(handle.lstrip("@"), safe="")}'
+
+    @property
+    def vk_url(self):
+        if not self.vk:
+            return ''
+        profile = self.vk.strip()
+        for prefix in ('https://vk.ru/', 'https://vk.com/'):
+            if profile.startswith(prefix):
+                profile = profile.removeprefix(prefix)
+                break
+        return f'https://vk.ru/{quote(profile.lstrip("@"), safe="")}'
 
     @property
     def is_admin(self):

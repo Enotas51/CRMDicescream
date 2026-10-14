@@ -22,7 +22,7 @@ class CRMSignupForm(SignupForm):
 class UserApprovalForm(forms.ModelForm):
   class Meta:
     model = User
-    fields = ['role', 'approval_status', 'is_active', 'show_in_team', 'first_name', 'last_name', 'email', 'phone', 'telegram', 'gmail', 'bio']
+    fields = ['role', 'approval_status', 'is_active', 'show_in_team', 'first_name', 'last_name', 'email', 'phone', 'telegram', 'gmail', 'vk', 'bio']
     labels = {
       'role': 'Роль',
       'approval_status': 'Статус',
@@ -34,6 +34,7 @@ class UserApprovalForm(forms.ModelForm):
       'phone': 'Телефон',
       'telegram': 'Telegram',
       'gmail': 'Gmail',
+      'vk': 'VK',
       'bio': 'Краткая информация',
     }
 
@@ -47,11 +48,11 @@ class UserApprovalForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
   class Meta:
     model = User
-    fields = ['first_name', 'last_name', 'email', 'avatar_file', 'phone', 'telegram', 'gmail', 'bio']
+    fields = ['first_name', 'last_name', 'email', 'avatar_file', 'phone', 'telegram', 'gmail', 'vk', 'bio']
     labels = {
       'first_name': 'Имя', 'last_name': 'Фамилия', 'email': 'E-mail',
       'avatar_file': 'Фото профиля', 'phone': 'Телефон',
-      'telegram': 'Telegram', 'gmail': 'Gmail', 'bio': 'Краткая информация',
+      'telegram': 'Telegram', 'gmail': 'Gmail', 'vk': 'VK', 'bio': 'Краткая информация',
     }
     widgets = {
       'avatar_file': forms.FileInput(attrs={'class': 'profile-avatar-file', 'accept': 'image/jpeg,image/png,image/webp'}),
