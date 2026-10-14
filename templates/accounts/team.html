@@ -17,6 +17,7 @@
         {% if member.phone %}<div><dt><i class="bi bi-telephone"></i></dt><dd>{{ member.phone }}</dd></div>{% endif %}
         {% if member.telegram %}<div><dt><i class="bi bi-telegram"></i></dt><dd>{{ member.telegram }}</dd></div>{% endif %}
         {% if member.email %}<div><dt><i class="bi bi-envelope"></i></dt><dd class="text-truncate">{{ member.email }}</dd></div>{% endif %}
+        {% if member.gmail %}<div><dt><i class="bi bi-google"></i></dt><dd class="text-truncate">{{ member.gmail }}</dd></div>{% endif %}
       </dl>
     </article>
     {% empty %}<div class="text-muted">Участников пока нет.</div>{% endfor %}

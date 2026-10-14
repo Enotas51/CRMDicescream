@@ -22,7 +22,7 @@ class CRMSignupForm(SignupForm):
 class UserApprovalForm(forms.ModelForm):
   class Meta:
     model = User
-    fields = ['role', 'approval_status', 'is_active', 'first_name', 'last_name', 'email', 'phone', 'telegram', 'bio']
+    fields = ['role', 'approval_status', 'is_active', 'first_name', 'last_name', 'email', 'phone', 'telegram', 'gmail', 'bio']
     labels = {
       'role': 'Роль',
       'approval_status': 'Статус',
@@ -32,6 +32,7 @@ class UserApprovalForm(forms.ModelForm):
       'email': 'Email',
       'phone': 'Телефон',
       'telegram': 'Telegram',
+      'gmail': 'Gmail',
       'bio': 'Краткая информация',
     }
 
@@ -45,11 +46,11 @@ class UserApprovalForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
   class Meta:
     model = User
-    fields = ['first_name', 'last_name', 'email', 'avatar_file', 'phone', 'telegram', 'bio']
+    fields = ['first_name', 'last_name', 'email', 'avatar_file', 'phone', 'telegram', 'gmail', 'bio']
     labels = {
       'first_name': 'Имя', 'last_name': 'Фамилия', 'email': 'E-mail',
       'avatar_file': 'Фото профиля', 'phone': 'Телефон',
-      'telegram': 'Telegram', 'bio': 'Краткая информация',
+      'telegram': 'Telegram', 'gmail': 'Gmail', 'bio': 'Краткая информация',
     }
     widgets = {
       'avatar_file': forms.FileInput(attrs={'class': 'profile-avatar-file', 'accept': 'image/jpeg,image/png,image/webp'}),

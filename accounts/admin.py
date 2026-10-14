@@ -11,7 +11,7 @@ class UserAdmin(BaseUserAdmin):
   list_filter = ('role', 'approval_status', 'is_active')
   search_fields = ('username', 'email', 'first_name', 'last_name', 'yandex_id')
   fieldsets = BaseUserAdmin.fieldsets + (
-    (_('CRM'), {'fields': ('role', 'approval_status', 'yandex_id', 'avatar_url', 'avatar_file', 'phone', 'telegram', 'bio')}),
+    (_('CRM'), {'fields': ('role', 'approval_status', 'yandex_id', 'avatar_url', 'avatar_file', 'phone', 'telegram', 'gmail', 'bio')}),
   )
   add_fieldsets = BaseUserAdmin.add_fieldsets + (
     (_('CRM'), {'fields': ('role', 'approval_status')}),
