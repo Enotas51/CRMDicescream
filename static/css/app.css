@@ -232,6 +232,7 @@ h1, h2, h3, h4, h5, h6,
 .team-contacts > div { display: grid; grid-template-columns: 1.35rem minmax(0, 1fr); gap: .45rem; align-items: center; font-size: .88rem; }
 .team-contacts dt { color: var(--ds-accent); }
 .team-contacts dd { margin: 0; }
+.team-vk-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; border-radius: .28rem; background: #2787f5; color: #fff; font-size: .48rem; font-weight: 800; font-style: normal; letter-spacing: -.04em; line-height: 1; vertical-align: -.1rem; }
 .team-member-modal-dialog { max-width: min(560px, calc(100vw - 2rem)); }
 .team-member-modal .modal-body { max-height: min(68vh, 600px); overflow-y: auto; }
 .team-modal-profile { display: flex; align-items: center; gap: 1rem; }

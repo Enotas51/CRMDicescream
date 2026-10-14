@@ -60,6 +60,12 @@ class User(AbstractUser):
 
     @property
     def vk_url(self):
+        if not self.vk_username:
+            return ''
+        return f'https://vk.ru/{quote(self.vk_username, safe="")}'
+
+    @property
+    def vk_username(self):
         if not self.vk:
             return ''
         profile = self.vk.strip()
@@ -67,7 +73,7 @@ class User(AbstractUser):
             if profile.startswith(prefix):
                 profile = profile.removeprefix(prefix)
                 break
-        return f'https://vk.ru/{quote(profile.lstrip("@"), safe="")}'
+        return profile.strip('/').lstrip('@')
 
     @property
     def is_admin(self):
