@@ -21,25 +21,25 @@
 
   <div class="row g-3 mb-3">
     <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body">
+      <div class="card h-100"><div class="card-body">
         <div class="text-muted small">Общий долг</div>
         <div class="h4 mb-0">{{ debt.amount }} ₽</div>
       </div></div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body">
+      <div class="card h-100"><div class="card-body">
         <div class="text-muted small">Погашено (без коммунальных)</div>
         <div class="h4 mb-0 text-success">{{ repaid_amount }} ₽</div>
       </div></div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body">
+      <div class="card h-100"><div class="card-body">
         <div class="text-muted small">Остаток</div>
         <div class="h4 mb-0 text-danger">{{ remaining_amount }} ₽</div>
       </div></div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card"><div class="card-body">
+      <div class="card h-100"><div class="card-body">
         <div class="text-muted small">Коммунальные</div>
         <div class="h4 mb-0 text-info">{{ debt.utilities_amount }} ₽</div>
         <small class="text-muted">с каждого платежа · всего: {{ utilities_credited }} ₽</small>
