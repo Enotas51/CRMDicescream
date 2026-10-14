@@ -7,19 +7,45 @@
   </div>
   <div class="team-grid">
     {% for member in team_members %}
-    <article class="card team-card">
-      <div class="team-card-header">
-        {% if member.avatar_file %}<img src="{{ member.avatar_file.url }}" alt="" class="team-avatar">{% elif member.avatar_url %}<img src="{{ member.avatar_url }}" alt="" class="team-avatar">{% else %}<div class="team-avatar team-avatar-placeholder"><i class="bi bi-person"></i></div>{% endif %}
-        <div class="min-w-0"><h2 class="h5 mb-1 text-truncate">{{ member.get_full_name|default:member.username }}</h2><div class="text-muted">@{{ member.username }}</div></div>
-      </div>
-      {% if member.bio %}<p class="team-bio">{{ member.bio }}</p>{% else %}<p class="team-bio text-muted">Информация не добавлена</p>{% endif %}
+    <button type="button" class="card team-card team-card-trigger" data-bs-toggle="modal" data-bs-target="#teamMemberModal{{ member.pk }}" aria-label="Открыть профиль {{ member }}">
+      <span class="team-card-header">
+        {% if member.avatar_file %}<img src="{{ member.avatar_file.url }}" alt="" class="team-avatar">{% elif member.avatar_url %}<img src="{{ member.avatar_url }}" alt="" class="team-avatar">{% else %}<span class="team-avatar team-avatar-placeholder"><i class="bi bi-person"></i></span>{% endif %}
+        <span class="min-w-0"><span class="team-member-name text-truncate">{{ member.get_full_name|default:member.username }}</span><span class="text-muted">@{{ member.username }}</span></span>
+      </span>
       <dl class="team-contacts mb-0">
         {% if member.phone %}<div><dt><i class="bi bi-telephone"></i></dt><dd>{{ member.phone }}</dd></div>{% endif %}
         {% if member.telegram %}<div><dt><i class="bi bi-telegram"></i></dt><dd>{{ member.telegram }}</dd></div>{% endif %}
         {% if member.email %}<div><dt><i class="bi bi-envelope"></i></dt><dd class="text-truncate">{{ member.email }}</dd></div>{% endif %}
         {% if member.gmail %}<div><dt><i class="bi bi-google"></i></dt><dd class="text-truncate">{{ member.gmail }}</dd></div>{% endif %}
       </dl>
-    </article>
+    </button>
+
+    <div class="modal fade" id="teamMemberModal{{ member.pk }}" tabindex="-1" aria-labelledby="teamMemberTitle{{ member.pk }}" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered team-member-modal-dialog">
+        <div class="modal-content team-member-modal">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="teamMemberTitle{{ member.pk }}">Профиль участника</h2>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+          </div>
+          <div class="modal-body">
+            <div class="team-modal-profile">
+              {% if member.avatar_file %}<img src="{{ member.avatar_file.url }}" alt="Портрет {{ member }}" class="team-modal-avatar">{% elif member.avatar_url %}<img src="{{ member.avatar_url }}" alt="Портрет {{ member }}" class="team-modal-avatar">{% else %}<div class="team-modal-avatar team-avatar-placeholder"><i class="bi bi-person"></i></div>{% endif %}
+              <div><h3 class="h4 mb-1">{{ member.get_full_name|default:member.username }}</h3><div class="text-muted mb-1">@{{ member.username }}</div><span class="badge bg-secondary">{{ member.get_role_display }}</span></div>
+            </div>
+            <div class="team-modal-section">
+              <div class="team-modal-label">О себе</div>
+              <p class="team-modal-description mb-0">{{ member.bio|default:"Информация не добавлена" }}</p>
+            </div>
+            <dl class="team-modal-contacts mb-0">
+              <div><dt><i class="bi bi-telephone"></i> Телефон</dt><dd>{{ member.phone|default:"Не указан" }}</dd></div>
+              <div><dt><i class="bi bi-telegram"></i> Telegram</dt><dd>{{ member.telegram|default:"Не указан" }}</dd></div>
+              <div><dt><i class="bi bi-envelope"></i> E-mail</dt><dd>{{ member.email|default:"Не указан" }}</dd></div>
+              <div><dt><i class="bi bi-google"></i> Gmail</dt><dd>{{ member.gmail|default:"Не указан" }}</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
     {% empty %}<div class="text-muted">Участников пока нет.</div>{% endfor %}
   </div>
 </div>
