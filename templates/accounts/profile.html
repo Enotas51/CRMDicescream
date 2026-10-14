@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Мой профиль{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="row justify-content-center"><div class="col-xl-8 col-lg-10">
+  <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Мой профиль</h1></div>
+  <div class="card"><div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% for field in form %}
+      {% if field.name == 'avatar_file' %}
+      <div class="mb-4 profile-avatar-upload">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        <div class="profile-avatar-picker">
+          {% if form.instance.avatar_file %}<img src="{{ form.instance.avatar_file.url }}" alt="Текущее фото" class="profile-avatar-preview">{% elif form.instance.avatar_url %}<img src="{{ form.instance.avatar_url }}" alt="Текущее фото" class="profile-avatar-preview">{% else %}<div class="profile-avatar-preview profile-avatar-placeholder"><i class="bi bi-person"></i></div>{% endif %}
+          <div><div class="small text-muted mb-2">Выбери фотографию с устройства — она появится в профиле и команде.</div>{{ field }}<div class="form-text">JPG, PNG или WEBP.</div></div>
+        </div>
+        {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+      </div>
+      {% else %}
+      <div class="mb-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}</div>
+      {% endif %}
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">Сохранить</button>
+    </form>
+  </div></div>
+</div></div></div>
+{% endblock %}

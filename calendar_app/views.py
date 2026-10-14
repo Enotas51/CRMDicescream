@@ -1,5 +1,5 @@
 import calendar as cal_module
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -9,8 +9,9 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 
 from accounts.permissions import ApprovedUserMixin, CanEditMixin, user_can_edit_object
 from tasks.models import Task
-from .event_copy import create_event_copies, parse_copy_dates
+from .event_copy import create_event_copies, parse_copy_dates, weekly_dates
 from .forms import EventForm
+from .holidays import get_russian_holidays
 from .models import Event
 
 
@@ -44,6 +45,7 @@ class CalendarView(ApprovedUserMixin, ListView):
 
     events_by_date = {}
     for event in events:
+      event.can_edit = user_can_edit_object(self.request.user, event)
       day_key = event.start.date()
       events_by_date.setdefault(day_key, []).append(event)
 
@@ -51,6 +53,8 @@ class CalendarView(ApprovedUserMixin, ListView):
     for task in tasks:
       if task.due_date:
         tasks_by_date.setdefault(task.due_date, []).append(task)
+
+    holidays_by_date = get_russian_holidays(year)
 
     calendar_weeks = []
     for week in weeks:
@@ -62,6 +66,8 @@ class CalendarView(ApprovedUserMixin, ListView):
           'is_weekend': day.weekday() >= 5,
           'events': events_by_date.get(day, []),
           'tasks': tasks_by_date.get(day, []),
+          'holidays': ([{'name': holidays_by_date[day]}]
+                       if day in holidays_by_date else []),
         })
       calendar_weeks.append(week_data)
 
@@ -106,14 +112,55 @@ class EventCreateView(CanEditMixin, CreateView):
   form_class = EventForm
   template_name = 'calendar_app/form.html'
 
+  def get_initial(self):
+    initial = super().get_initial()
+    requested_date = self.request.GET.get('date')
+    if not requested_date:
+      return initial
+    try:
+      event_date = date.fromisoformat(requested_date)
+    except ValueError:
+      return initial
+    initial['start'] = timezone.make_aware(datetime.combine(event_date, time(hour=9)))
+    initial['end'] = timezone.make_aware(datetime.combine(event_date, time(hour=18)))
+    return initial
+
   def form_valid(self, form):
+    recurrence_type = self.request.POST.get('recurrence_type', 'none')
+    weekly_until = None
+    if recurrence_type == 'weekly':
+      try:
+        weekly_until = date.fromisoformat(self.request.POST.get('recurrence_until', ''))
+      except ValueError:
+        form.add_error(None, 'Для еженедельного повторения укажи дату окончания.')
+        return self.form_invalid(form)
+      if weekly_until <= timezone.localtime(form.instance.start).date():
+        form.add_error(None, 'Дата окончания должна быть позже даты первого события.')
+        return self.form_invalid(form)
+
     form.instance.created_by = self.request.user
     response = super().form_valid(form)
-    copies = create_event_copies(
-      self.object,
-      parse_copy_dates(self.request.POST.getlist('copy_date')),
-      self.request.user,
-    )
+    if recurrence_type == 'weekly':
+      from uuid import uuid4
+      recurrence_key = uuid4()
+      self.object.recurrence_key = recurrence_key
+      self.object.recurrence_until = weekly_until
+      self.object.save(update_fields=['recurrence_key', 'recurrence_until'])
+      copies = create_event_copies(
+        self.object,
+        weekly_dates(timezone.localtime(self.object.start).date(), weekly_until),
+        self.request.user,
+        recurrence_key=recurrence_key,
+        recurrence_until=weekly_until,
+      )
+    elif recurrence_type == 'dates':
+      copies = create_event_copies(
+        self.object,
+        parse_copy_dates(self.request.POST.getlist('copy_date')),
+        self.request.user,
+      )
+    else:
+      copies = []
     if copies:
       messages.success(
         self.request,

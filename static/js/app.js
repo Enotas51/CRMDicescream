@@ -15,6 +15,25 @@ document.addEventListener('DOMContentLoaded', function () {
   var overlay = document.getElementById('sidebarOverlay');
   var toggle = document.getElementById('sidebarToggle');
   var closeBtn = document.getElementById('sidebarClose');
+  var themeToggle = document.getElementById('themeToggle');
+
+  function setTheme(theme) {
+    var isDark = theme !== 'light';
+    document.documentElement.dataset.bsTheme = isDark ? 'dark' : 'light';
+    if (themeToggle) {
+      themeToggle.setAttribute('aria-pressed', String(isDark));
+      themeToggle.querySelector('.theme-toggle-label').textContent = isDark ? 'Тёмная тема' : 'Светлая тема';
+      themeToggle.querySelector('.theme-toggle-icon i').className = isDark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+    }
+    try { localStorage.setItem('ds-theme', isDark ? 'dark' : 'light'); } catch (e) {}
+  }
+
+  if (themeToggle) {
+    setTheme(document.documentElement.dataset.bsTheme);
+    themeToggle.addEventListener('click', function () {
+      setTheme(document.documentElement.dataset.bsTheme === 'dark' ? 'light' : 'dark');
+    });
+  }
 
   function openSidebar() {
     document.body.classList.add('sidebar-open');

@@ -17,3 +17,6 @@ media/
 *.egg-info/
 dist/
 build/
+.next/
+node_modules/
+next-env.d.ts

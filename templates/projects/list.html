@@ -20,18 +20,18 @@
   <div class="row g-3">
     {% for project in projects %}
     <div class="col-md-6 col-xl-4">
-      <div class="card h-100 project-card" style="border-left: 4px solid {{ project.color }}">
+      <a href="{% url 'projects:detail' project.pk %}" class="card h-100 project-card" style="border-left: 4px solid {{ project.color }}">
         <div class="card-body">
           <div class="d-flex justify-content-between">
-            <h2 class="h5"><a href="{% url 'projects:detail' project.pk %}" class="text-decoration-none">{{ project.name }}</a></h2>
-            <span class="badge bg-secondary">{{ project.get_status_display }}</span>
+            <h2 class="h5">{{ project.name }}</h2>
+            <span class="badge project-status-badge project-status-badge-{{ project.status }}">{{ project.get_status_display }}</span>
           </div>
           <p class="text-muted small mb-2">{{ project.description|truncatewords:20 }}</p>
           <div class="small text-muted">
             Задач: {{ project.task_count }} · Бюджет: {{ project.budget }} ₽
           </div>
         </div>
-      </div>
+      </a>
     </div>
     {% empty %}
     <div class="col-12"><div class="alert alert-info">Проектов пока нет.</div></div>

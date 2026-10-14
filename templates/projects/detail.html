@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+{% load l10n %}
 {% block title %}{{ project.name }}{% endblock %}
+{% block page_messages %}{% for message in messages %}{% endfor %}{% endblock %}
 {% block content %}
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
@@ -7,69 +9,74 @@
       <h1 class="h3 mb-1" style="border-left:4px solid {{ project.color }}; padding-left:12px">{{ project.name }}</h1>
       <span class="badge bg-secondary">{{ project.get_status_display }}</span>
     </div>
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="d-flex flex-wrap project-header-actions">
+      {% if can_edit or user.is_admin %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#equipmentModal">+ Товар</button>{% endif %}
+      {% if can_edit %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#fileModal">+ Файл</button>{% endif %}
+      {% if can_edit %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#taskModal">+ Задача</button>{% endif %}
       {% if can_edit or user.is_admin %}
-      <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-secondary btn-sm">Полное редактирование</a>
+      <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-secondary btn-sm project-header-icon" title="Редактировать" aria-label="Редактировать"><i class="bi bi-pencil"></i></a>
       {% endif %}
       {% if user.is_admin %}
-      <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+      <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger btn-sm project-header-icon" title="Удалить" aria-label="Удалить"><i class="bi bi-trash"></i></a>
       {% endif %}
-      <a href="{% url 'tasks:create' %}?project={{ project.pk }}" class="btn btn-primary btn-sm">+ Задача</a>
     </div>
   </div>
 
   <div class="row g-3">
-    <div class="col-lg-8">
-      {% if can_edit %}
-      <div class="card mb-3">
-        <div class="card-header"><i class="bi bi-sliders"></i> Управление проектом</div>
+    <div class="col-12">
+      <section class="card project-overview-card mb-3" style="--project-accent: {{ project.color }}">
         <div class="card-body">
-          <form method="post" action="{% url 'projects:quick_update' project.pk %}">
-            {% csrf_token %}
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">{{ quick_form.status.label }}</label>
-                {{ quick_form.status }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ quick_form.budget.label }}</label>
-                {{ quick_form.budget }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label text-muted small mb-0">Баланс для заказов</label>
-                <div class="form-control-plaintext fw-semibold {% if main_balance >= 0 %}text-success{% else %}text-danger{% endif %}">
-                  {{ main_balance|floatformat:2 }} ₽
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">{{ quick_form.start_date.label }}</label>
-                {{ quick_form.start_date }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">{{ quick_form.end_date.label }}</label>
-                {{ quick_form.end_date }}
-              </div>
-              <div class="col-12">
-                <label class="form-label">{{ quick_form.description.label }}</label>
-                {{ quick_form.description }}
-              </div>
+          <div class="project-overview-heading">
+            <div>
+              <div class="project-overview-eyebrow">Карточка проекта</div>
+              <h2 class="project-overview-title">Основная информация</h2>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm mt-3">Сохранить</button>
-          </form>
-        </div>
-      </div>
-      {% else %}
-      <div class="card mb-3"><div class="card-body">{{ project.description|linebreaks|default:"Без описания" }}</div></div>
-      {% endif %}
+            {% if can_edit %}
+            <form method="post" action="{% url 'projects:status' project.pk %}" class="project-status-form">
+              {% csrf_token %}
+              <select name="status" class="form-select form-select-sm project-status-select project-status-{{ project.status }}" aria-label="Статус проекта" onchange="this.form.submit()">
+                {% for value, label in project_status_choices %}<option value="{{ value }}" class="project-status-option-{{ value }}" {% if project.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+            </form>
+            {% else %}<span class="badge project-status-badge project-status-badge-{{ project.status }}">{{ project.get_status_display }}</span>{% endif %}
+          </div>
 
-      <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <span><i class="bi bi-box-seam"></i> Оборудование</span>
+          <div class="project-overview-grid">
+            <div class="project-overview-stat">
+              <span>Бюджет</span>
+              <strong>{{ project.budget|floatformat:0 }} ₽</strong>
+            </div>
+            <div class="project-overview-stat">
+              <span>Баланс для заказов</span>
+              <strong class="text-success">{{ main_balance|floatformat:0 }} ₽</strong>
+            </div>
+            <div class="project-overview-stat">
+              <span>Начало</span>
+              <strong>{% if project.start_date %}{{ project.start_date|date:"d.m.Y" }}{% else %}Не указано{% endif %}</strong>
+            </div>
+            <div class="project-overview-stat">
+              <span>Окончание</span>
+              <strong>{% if project.end_date %}{{ project.end_date|date:"d.m.Y" }}{% else %}Не указано{% endif %}</strong>
+            </div>
+          </div>
+
+          <div class="project-overview-details">
+            <div class="project-overview-description">
+              <span>Описание</span>
+              <div>{{ project.description|linebreaksbr|default:"Описание пока не добавлено." }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="card mb-3 {% if not equipment %}equipment-modal-host{% endif %}">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 {% if not equipment %}d-none{% endif %}">
+          <span><i class="bi bi-box-seam"></i> Товары</span>
           {% if equipment %}
           <span class="small text-muted">Итого: {{ equipment_total|floatformat:2 }} ₽</span>
           {% endif %}
         </div>
-        <div class="table-responsive">
+        <div class="table-responsive {% if not equipment %}d-none{% endif %}">
           <table class="table mb-0 align-middle project-equipment-table">
             <thead>
               <tr>
@@ -85,211 +92,323 @@
             <tbody>
               {% for item in equipment %}
               <tr>
-                {% if can_edit %}
-                <td style="min-width:200px">
-                  <input type="text" name="name" value="{{ item.name }}" form="equipment-form-{{ item.pk }}" class="form-control form-control-sm" required>
-                  <input type="url" name="ozon_url" value="{{ item.ozon_url }}" form="equipment-form-{{ item.pk }}" class="form-control form-control-sm mt-1" placeholder="Ссылка OZON">
-                  {% if item.ozon_url %}
-                  <a href="{{ item.ozon_url }}" target="_blank" rel="noopener" class="small">Открыть OZON</a>
-                  {% endif %}
+                <td class="project-equipment-name-cell">
+                  <div class="project-equipment-name">{{ item.name }}</div>
                   {% if item.order_transaction_id %}
-                  <div class="small text-muted mt-1">
+                  <div class="project-equipment-transaction">
                     <i class="bi bi-cash-stack"></i> Списано с баланса
                     <a href="{% url 'finance:transaction_detail' item.order_transaction_id %}" class="text-decoration-none">→</a>
                   </div>
                   {% endif %}
                 </td>
-                <td class="text-end" style="width:110px">
-                  <input type="number" name="price" value="{{ item.price }}" form="equipment-form-{{ item.pk }}" step="0.01" min="0" class="form-control form-control-sm text-end" required>
+                <td class="text-end project-equipment-price">{{ item.price|floatformat:2 }} ₽</td>
+                <td class="text-center project-equipment-quantity">
+                  {% if can_edit %}
+                  <form method="post" action="{% url 'projects:equipment_quantity' project.pk item.pk %}">
+                    {% csrf_token %}
+                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control form-control-sm text-center" aria-label="Количество {{ item.name }}" onchange="this.form.requestSubmit()">
+                  </form>
+                  {% else %}
+                  {{ item.quantity }}
+                  {% endif %}
                 </td>
-                <td class="text-center" style="width:80px">
-                  <input type="number" name="quantity" value="{{ item.quantity }}" form="equipment-form-{{ item.pk }}" min="1" class="form-control form-control-sm text-center" required>
-                </td>
-                <td class="text-end" style="width:100px">{{ item.total_price|floatformat:2 }} ₽</td>
-                <td class="text-center" style="width:90px">
+                <td class="text-end project-equipment-total">{{ item.total_price|floatformat:2 }} ₽</td>
+                <td class="text-center project-equipment-check">
+                  {% if can_edit %}
                   <form method="post" action="{% url 'projects:equipment_toggle_ordered' project.pk item.pk %}" class="d-inline">
                     {% csrf_token %}
                     <input type="checkbox" name="is_ordered" class="form-check-input" {% if item.is_ordered %}checked{% endif %}
                       onchange="this.form.submit()" title="Списать сумму с баланса при заказе">
                   </form>
+                  {% elif item.is_ordered %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<span class="text-muted">—</span>
+                  {% endif %}
                 </td>
-                <td class="text-center" style="width:90px">
+                <td class="text-center project-equipment-check">
+                  {% if can_edit %}
                   <form method="post" action="{% url 'projects:equipment_toggle_received' project.pk item.pk %}" class="d-inline">
                     {% csrf_token %}
                     <input type="checkbox" name="is_received" class="form-check-input" {% if item.is_received %}checked{% endif %}
                       onchange="this.form.submit()">
                   </form>
+                  {% elif item.is_received %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<span class="text-muted">—</span>
+                  {% endif %}
                 </td>
-                <td class="text-end text-nowrap" style="width:120px">
-                  <form method="post" action="{% url 'projects:equipment_update' project.pk item.pk %}" id="equipment-form-{{ item.pk }}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-primary btn-sm" title="Сохранить"><i class="bi bi-check-lg"></i></button>
-                  </form>
+                {% if can_edit %}
+                <td class="text-end text-nowrap project-equipment-actions">
+                  {% if item.ozon_url %}
+                  <a href="{{ item.ozon_url }}" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm" title="Открыть товар"><i class="bi bi-box-arrow-up-right"></i></a>
+                  {% endif %}
+                  <button type="button" class="btn btn-outline-primary btn-sm equipment-edit-btn" title="Редактировать"
+                    data-bs-toggle="modal" data-bs-target="#equipmentEditModal"
+                    data-action="{% url 'projects:equipment_update' project.pk item.pk %}"
+                    data-name="{{ item.name }}" data-price="{{ item.price|unlocalize }}"
+                    data-quantity="{{ item.quantity }}" data-url="{{ item.ozon_url }}">
+                    <i class="bi bi-pencil"></i>
+                  </button>
                   <form method="post" action="{% url 'projects:equipment_delete' project.pk item.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm" title="Удалить"
                       onclick="return confirm('Удалить позицию?')"><i class="bi bi-trash"></i></button>
                   </form>
                 </td>
-                {% else %}
-                <td>
-                  {{ item.name }}
-                  {% if item.ozon_url %}
-                  <div><a href="{{ item.ozon_url }}" target="_blank" rel="noopener" class="small">OZON</a></div>
-                  {% endif %}
-                </td>
-                <td class="text-end">{{ item.price|floatformat:2 }} ₽</td>
-                <td class="text-center">{{ item.quantity }}</td>
-                <td class="text-end">{{ item.total_price|floatformat:2 }} ₽</td>
-                <td class="text-center">
-                  {% if item.is_ordered %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<span class="text-muted">—</span>{% endif %}
-                </td>
-                <td class="text-center">
-                  {% if item.is_received %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<span class="text-muted">—</span>{% endif %}
-                </td>
                 {% endif %}
               </tr>
               {% empty %}
-              <tr><td colspan="{% if can_edit %}7{% else %}6{% endif %}" class="text-muted">Оборудование не добавлено</td></tr>
+              <tr><td colspan="{% if can_edit %}7{% else %}6{% endif %}" class="text-muted">Товары не добавлены</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-
-        {% if can_edit %}
-        <div class="card-body border-top">
-          <h3 class="h6 text-muted mb-3">Добавить оборудование</h3>
-          <form method="post" action="{% url 'projects:equipment_add' project.pk %}" id="projectEquipmentAddForm">
-            {% csrf_token %}
-            <div class="row g-2 align-items-end">
-              <div class="col-lg-4">
-                <label class="form-label small">{{ equipment_add_form.name.label }}</label>
-                {{ equipment_add_form.name }}
-              </div>
-              <div class="col-md-3 col-lg-2">
-                <label class="form-label small">{{ equipment_add_form.price.label }}</label>
-                {{ equipment_add_form.price }}
-              </div>
-              <div class="col-md-3 col-lg-2">
-                <label class="form-label small">{{ equipment_add_form.quantity.label }}</label>
-                {{ equipment_add_form.quantity }}
-              </div>
-              <div class="col-lg-3">
-                <label class="form-label small">{{ equipment_add_form.ozon_url.label }}</label>
-                {{ equipment_add_form.ozon_url }}
-              </div>
-              <div class="col-lg-1">
-                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i></button>
-              </div>
-            </div>
-            <div class="d-flex gap-2 mt-2 flex-wrap align-items-center">
-              <button type="button" class="btn btn-outline-info btn-sm ozon-fetch-btn-detail">
-                <i class="bi bi-cloud-download"></i> Подтянуть
-              </button>
-              <span class="small ozon-fetch-status-detail"></span>
-            </div>
-          </form>
-          <p class="small text-muted mb-0 mt-2">
-            При отметке «Заказал» сумма позиции автоматически списывается с основного баланса.
-          </p>
-        </div>
-        {% endif %}
       </div>
 
+      {% if project_files %}
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-paperclip"></i> Файлы</span>
-          {% if project_files %}<span class="small text-muted">{{ project_files|length }}</span>{% endif %}
+          <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'projects:files_download' project.pk %}" class="btn btn-outline-secondary btn-sm">Скачать всё</a>
+          </div>
         </div>
-        {% if can_edit %}
-        <div class="card-body border-bottom">
-          <form method="post" action="{% url 'projects:file_upload' project.pk %}" enctype="multipart/form-data" class="row g-2 align-items-end">
-            {% csrf_token %}
-            <div class="col-md-5">
-              <label class="form-label small">{{ file_form.file.label }}</label>
-              {{ file_form.file }}
-            </div>
-            <div class="col-md-5">
-              <label class="form-label small">{{ file_form.name.label }}</label>
-              {{ file_form.name }}
-            </div>
-            <div class="col-md-2">
-              <button type="submit" class="btn btn-primary btn-sm w-100">Загрузить</button>
-            </div>
-          </form>
-        </div>
-        {% endif %}
-        <ul class="list-group list-group-flush">
+        <div class="project-files-grid">
           {% for f in project_files %}
-          <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
-            <div class="text-truncate">
-              <a href="{{ f.file.url }}" target="_blank" rel="noopener" class="text-decoration-none">
-                <i class="bi bi-file-earmark"></i> {{ f.display_name }}
-              </a>
-              <div class="small text-muted">{{ f.created_at|date:"d.m.Y H:i" }}{% if f.created_by %} · {{ f.created_by.username }}{% endif %}</div>
-            </div>
+          <article class="project-file-card">
+            <a href="{{ f.file.url }}" target="_blank" rel="noopener" class="project-file-preview" title="Открыть файл">
+              {% with filename=f.file.name|lower %}
+              {% if ".jpg" in filename or ".jpeg" in filename or ".png" in filename or ".gif" in filename or ".webp" in filename %}
+              <img src="{{ f.file.url }}" alt="{{ f.display_name }}" loading="lazy">
+              {% else %}
+              <span class="project-file-generic-icon">
+                <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                <strong>{{ f.file_extension }}</strong>
+              </span>
+              {% endif %}
+              {% endwith %}
+            </a>
+            <div class="project-file-name" title="{{ f.display_name }}">{{ f.display_name }}</div>
+            <div class="project-file-date">{{ f.created_at|date:"d.m.Y H:i" }}</div>
             {% if can_edit %}
             <form method="post" action="{% url 'projects:file_delete' project.pk f.pk %}" class="flex-shrink-0">
               {% csrf_token %}
-              <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить файл?')">
-                <i class="bi bi-trash"></i>
-              </button>
+              <button type="submit" class="btn btn-outline-danger btn-sm project-file-delete" onclick="return confirm('Удалить файл?')"><i class="bi bi-trash"></i> Удалить</button>
             </form>
             {% endif %}
-          </li>
-          {% empty %}
-          <li class="list-group-item text-muted">Файлов нет</li>
+          </article>
           {% endfor %}
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">Задачи проекта</div>
-        <ul class="list-group list-group-flush">
-          {% for task in tasks %}
-          <li class="list-group-item d-flex justify-content-between">
-            <a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a>
-            <span class="badge bg-light text-dark">{{ task.get_status_display }}</span>
-          </li>
-          {% empty %}
-          <li class="list-group-item text-muted">Задач нет</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-
-    <div class="col-lg-4">
-      <div class="card mb-3">
-        <div class="card-body">
-          <p><strong>Бюджет:</strong> {{ project.budget }} ₽</p>
-          <p><strong>Оборудование:</strong> {{ equipment_total|floatformat:2 }} ₽</p>
-          <p><strong>Начало:</strong> {{ project.start_date|date:"d.m.Y"|default:"—" }}</p>
-          <p><strong>Окончание:</strong> {{ project.end_date|date:"d.m.Y"|default:"—" }}</p>
-          <p><strong>Участники:</strong></p>
-          <ul class="mb-0">{% for m in project.members.all %}<li>{{ m.username }}</li>{% empty %}<li class="text-muted">—</li>{% endfor %}</ul>
         </div>
       </div>
-      {% if not can_edit and project.description %}
+      {% endif %}
+
+      {% if tasks %}
       <div class="card">
-        <div class="card-header">Описание</div>
-        <div class="card-body">{{ project.description|linebreaks }}</div>
+        <div class="card-header">Задачи проекта</div>
+        <div class="project-tasks-grid">
+          {% for task in tasks %}
+          <a href="#" class="project-task-card project-task-info-trigger" data-title="{{ task.title }}" data-description="{{ task.description }}" data-project="{{ project.name }}" data-status="{{ task.get_status_display }}" data-priority="{{ task.get_priority_display }}" data-assignee="{{ task.assignee|default:'Не назначен' }}" data-due="{% if task.due_date %}{{ task.due_date|date:'d.m.Y' }}{% else %}Не задан{% endif %}" data-detail-url="{% url 'tasks:detail' task.pk %}" data-edit-url="{% url 'tasks:edit' task.pk %}" data-delete-url="{% url 'tasks:delete' task.pk %}">
+            <div class="project-task-title">{{ task.title }}</div>
+            <div class="project-task-meta">
+              <span class="badge bg-light text-dark">{{ task.get_status_display }}</span>
+              <span class="badge project-task-priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+            </div>
+            {% if task.due_date %}<div class="project-task-due"><i class="bi bi-calendar3"></i> {{ task.due_date|date:"d.m.Y" }}</div>{% endif %}
+          </a>
+          {% endfor %}
+        </div>
       </div>
       {% endif %}
     </div>
+
   </div>
 </div>
+
+{% if can_edit or user.is_admin %}
+{% if can_edit %}
+<div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="taskModalLabel">Новая задача</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <form method="post" action="{% url 'projects:task_add' project.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="project" value="{{ project.pk }}">
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">{{ task_form.title.label }}</label>{{ task_form.title }}</div>
+          <div class="mb-3"><label class="form-label">{{ task_form.description.label }}</label>{{ task_form.description }}</div>
+          <div class="row g-3">
+            <div class="col-6"><label class="form-label">{{ task_form.status.label }}</label>{{ task_form.status }}</div>
+            <div class="col-6"><label class="form-label">{{ task_form.priority.label }}</label>{{ task_form.priority }}</div>
+            <div class="col-7"><label class="form-label">{{ task_form.assignee.label }}</label>{{ task_form.assignee }}</div>
+            <div class="col-5"><label class="form-label">{{ task_form.due_date.label }}</label>{{ task_form.due_date }}</div>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button><button type="submit" class="btn btn-primary">Создать</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if can_edit %}
+<div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="fileModalLabel">Добавить файл</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <form method="post" action="{% url 'projects:file_upload' project.pk %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">{{ file_form.file.label }}</label>
+            {{ file_form.file }}
+          </div>
+          <div>
+            <label class="form-label">{{ file_form.name.label }}</label>
+            {{ file_form.name }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary">Загрузить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% include "tasks/_task_info_modal.html" %}
+<div class="modal fade" id="equipmentModal" tabindex="-1" aria-labelledby="equipmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="equipmentModalLabel">Добавить товар</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'projects:equipment_add' project.pk %}" id="projectEquipmentAddForm">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label small">{{ equipment_add_form.ozon_url.label }}</label>
+              {{ equipment_add_form.ozon_url }}
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-2 flex-wrap align-items-center marketplace-actions-detail">
+            <button type="button" class="btn btn-outline-info btn-sm marketplace-fetch-btn-detail" data-marketplace="ozon">
+              <i class="bi bi-cloud-download"></i> Подтянуть с OZON
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm marketplace-fetch-btn-detail" data-marketplace="wildberries">
+              <i class="bi bi-cloud-download"></i> Подтянуть с Wildberries
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm marketplace-fetch-btn-detail" data-marketplace="aliexpress">
+              <i class="bi bi-cloud-download"></i> Подтянуть с AliExpress
+            </button>
+            <span class="small ozon-fetch-status-detail"></span>
+          </div>
+          <div class="d-flex align-items-center gap-2 my-3 text-muted small">
+            <span class="flex-grow-1 border-top"></span><span>или заполните вручную</span><span class="flex-grow-1 border-top"></span>
+          </div>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label small">{{ equipment_add_form.name.label }}</label>
+              {{ equipment_add_form.name }}
+            </div>
+            <div class="col-7 col-lg-4">
+              <label class="form-label small">{{ equipment_add_form.price.label }}</label>
+              {{ equipment_add_form.price }}
+            </div>
+            <div class="col-5 col-lg-2">
+              <label class="form-label small">{{ equipment_add_form.quantity.label }}</label>
+              {{ equipment_add_form.quantity }}
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Добавить</button>
+          </div>
+        </form>
+        <p class="small text-muted mb-0 mt-3">
+          При отметке «Заказал» сумма позиции автоматически списывается с основного баланса.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if can_edit %}
+<div class="modal fade" id="equipmentEditModal" tabindex="-1" aria-labelledby="equipmentEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="equipmentEditModalLabel">Редактировать товар</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" id="equipmentEditForm">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" id="equipmentEditQuantity">
+          <div class="mb-3">
+            <label for="equipmentEditName" class="form-label">Наименование</label>
+            <input type="text" name="name" id="equipmentEditName" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="equipmentEditPrice" class="form-label">Цена, ₽</label>
+            <input type="number" name="price" id="equipmentEditPrice" class="form-control" min="0" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label for="equipmentEditUrl" class="form-label">Ссылка на товар</label>
+            <input type="url" name="ozon_url" id="equipmentEditUrl" class="form-control" placeholder="Необязательно">
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var modal = document.getElementById('taskInfoModal');
+  if (!modal) return;
+  document.querySelectorAll('.project-task-info-trigger').forEach(function (card) {
+    card.addEventListener('click', function (event) {
+      event.preventDefault();
+      modal.querySelector('[data-task-info-title]').textContent = card.dataset.title;
+      modal.querySelector('[data-task-info-description]').textContent = card.dataset.description || 'Описание не добавлено.';
+      modal.querySelector('[data-task-info-project]').textContent = card.dataset.project || 'Без проекта';
+      modal.querySelector('[data-task-info-status]').textContent = card.dataset.status;
+      modal.querySelector('[data-task-info-priority]').textContent = card.dataset.priority;
+      modal.querySelector('[data-task-info-assignee]').textContent = card.dataset.assignee;
+      modal.querySelector('[data-task-info-due]').textContent = card.dataset.due;
+      modal.querySelector('[data-task-info-open]').href = card.dataset.detailUrl;
+      var edit = modal.querySelector('[data-task-info-edit]');
+      var remove = modal.querySelector('[data-task-info-delete]');
+      if (edit) edit.href = card.dataset.editUrl;
+      if (remove) remove.href = card.dataset.deleteUrl;
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  });
+});
+</script>
 {% endblock %}
 
 {% block extra_js %}
-{% if can_edit %}
+{% if can_edit or user.is_admin %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var fetchUrl = '{% url "projects:ozon_fetch" %}';
-  var csrfToken = document.querySelector('#projectEquipmentAddForm input[name=csrfmiddlewaretoken]').value;
-  var fetchBtn = document.querySelector('.ozon-fetch-btn-detail');
+  var fetchUrl = '{% url "projects:marketplace_fetch" %}';
+  var fetchButtons = document.querySelectorAll('.marketplace-fetch-btn-detail');
   var statusEl = document.querySelector('.ozon-fetch-status-detail');
   var form = document.getElementById('projectEquipmentAddForm');
-  if (!fetchBtn || !form) return;
+  if (!fetchButtons.length || !form) return;
+  var csrfField = form.querySelector('input[name=csrfmiddlewaretoken]');
+  if (!csrfField) return;
+  var csrfToken = csrfField.value;
 
   function showStatus(text, tone) {
     if (!statusEl) return;
@@ -301,49 +420,66 @@ document.addEventListener('DOMContentLoaded', function () {
     statusEl.textContent = text;
   }
 
-  fetchBtn.addEventListener('click', function () {
-    var urlField = form.querySelector('[name=ozon_url]');
-    var url = urlField ? urlField.value.trim() : '';
-    if (!url) {
-      showStatus('Укажите ссылку OZON', 'danger');
-      return;
-    }
-    fetchBtn.disabled = true;
-    showStatus('Загрузка...', 'muted');
-    var body = new URLSearchParams({ url: url });
-    fetch(fetchUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': csrfToken,
-      },
-      body: body.toString(),
-    })
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-      .then(function (result) {
-        if (!result.ok) throw new Error(result.data.error || 'Не удалось получить данные');
-        var nameField = form.querySelector('[name=name]');
-        var priceField = form.querySelector('[name=price]');
-        if (nameField && result.data.name) nameField.value = result.data.name;
-        if (priceField && result.data.price) priceField.value = result.data.price;
-        if (urlField && result.data.ozon_url) urlField.value = result.data.ozon_url;
-        if (result.data.warning) {
-          showStatus(result.data.warning, 'warning');
-        } else if (result.data.name && result.data.price) {
-          showStatus('Данные получены', 'success');
-        } else if (result.data.name) {
-          showStatus('Название подставлено. Укажите цену вручную.', 'warning');
-        } else {
-          showStatus('Данные подставлены частично', 'warning');
-        }
-      })
-      .catch(function (err) {
-        showStatus(err.message || 'Ошибка загрузки', 'danger');
-      })
-      .finally(function () {
-        fetchBtn.disabled = false;
+  fetchButtons.forEach(function (fetchBtn) {
+    fetchBtn.addEventListener('click', function () {
+      var urlField = form.querySelector('[name=ozon_url]');
+      var url = urlField ? urlField.value.trim() : '';
+      if (!url) {
+        showStatus('Сначала вставьте ссылку на товар', 'danger');
+        return;
+      }
+      fetchButtons.forEach(function (button) { button.disabled = true; });
+      showStatus('Получаю данные...', 'muted');
+      var body = new URLSearchParams({
+        url: url,
+        marketplace: fetchBtn.dataset.marketplace,
       });
+      fetch(fetchUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrfToken,
+        },
+        body: body.toString(),
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (result) {
+          if (!result.ok) throw new Error(result.data.error || 'Не удалось получить данные');
+          var nameField = form.querySelector('[name=name]');
+          var priceField = form.querySelector('[name=price]');
+          if (nameField && result.data.name) nameField.value = result.data.name;
+          if (priceField && result.data.price) priceField.value = result.data.price;
+          if (urlField && result.data.product_url) urlField.value = result.data.product_url;
+          if (result.data.warning) {
+            showStatus(result.data.warning, 'warning');
+          } else if (result.data.name && result.data.price) {
+            showStatus('Название и цена получены', 'success');
+          } else {
+            showStatus('Заполните недостающие поля вручную', 'warning');
+          }
+        })
+        .catch(function (err) {
+          showStatus(err.message || 'Ошибка загрузки', 'danger');
+        })
+        .finally(function () {
+          fetchButtons.forEach(function (button) { button.disabled = false; });
+        });
+    });
   });
+
+  var editModal = document.getElementById('equipmentEditModal');
+  var editForm = document.getElementById('equipmentEditForm');
+  if (editModal && editForm) {
+    editModal.addEventListener('show.bs.modal', function (event) {
+      var button = event.relatedTarget;
+      if (!button) return;
+      editForm.action = button.dataset.action;
+      editForm.querySelector('#equipmentEditName').value = button.dataset.name || '';
+      editForm.querySelector('#equipmentEditPrice').value = button.dataset.price || '';
+      editForm.querySelector('#equipmentEditQuantity').value = button.dataset.quantity || '1';
+      editForm.querySelector('#equipmentEditUrl').value = button.dataset.url || '';
+    });
+  }
 });
 </script>
 {% endif %}

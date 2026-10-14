@@ -6,8 +6,11 @@ app_name = 'accounts'
 
 urlpatterns = [
   path('pending/', views.pending_view, name='pending'),
+  path('team/', views.TeamView.as_view(), name='team'),
+  path('profile/', views.ProfileView.as_view(), name='profile'),
   path('users/', views.UserListView.as_view(), name='user_list'),
   path('users/<int:pk>/edit/', views.UserUpdateView.as_view(), name='user_edit'),
+  path('users/<int:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
   path('users/<int:pk>/approve/', views.approve_user, name='user_approve'),
   path('users/<int:pk>/reject/', views.reject_user, name='user_reject'),
   path('yandex/login/', yandex.yandex_login_redirect, name='yandex_login'),

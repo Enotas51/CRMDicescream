@@ -14,8 +14,8 @@ class EventForm(forms.ModelForm):
     widgets = {
       'title': forms.TextInput(attrs={'class': 'form-control'}),
       'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-      'start': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
-      'end': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+      'start': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
+      'end': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
       'all_day': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
       'project': forms.Select(attrs={'class': 'form-select'}),
       'participants': forms.SelectMultiple(attrs={'class': 'form-select'}),
@@ -33,6 +33,11 @@ class EventForm(forms.ModelForm):
       'color': 'Цвет',
       'location': 'Место',
     }
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.fields['start'].input_formats = ['%Y-%m-%dT%H:%M']
+    self.fields['end'].input_formats = ['%Y-%m-%dT%H:%M']
 
   def clean(self):
     cleaned = super().clean()

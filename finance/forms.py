@@ -53,7 +53,7 @@ class TransactionForm(forms.ModelForm):
       'debt': forms.Select(attrs={'class': 'form-select', 'id': 'id_debt'}),
       'debt_debtor': forms.Select(attrs={'class': 'form-select', 'id': 'id_debt_debtor'}),
       'skip_utilities': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_skip_utilities'}),
-      'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+      'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
       'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
     }
     labels = {
@@ -182,7 +182,7 @@ class UtilitiesOperationForm(forms.ModelForm):
       'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
       'operation_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_operation_type'}),
       'project': forms.Select(attrs={'class': 'form-select'}),
-      'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+      'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
       'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
     }
     labels = {
@@ -259,7 +259,7 @@ class ReserveTransferForm(forms.ModelForm):
       'direction': forms.Select(attrs={'class': 'form-select', 'id': 'id_direction'}),
       'source': forms.Select(attrs={'class': 'form-select', 'id': 'id_source'}),
       'project': forms.Select(attrs={'class': 'form-select'}),
-      'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+      'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
       'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
     }
     labels = {

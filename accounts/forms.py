@@ -22,7 +22,7 @@ class CRMSignupForm(SignupForm):
 class UserApprovalForm(forms.ModelForm):
   class Meta:
     model = User
-    fields = ['role', 'approval_status', 'is_active', 'first_name', 'last_name', 'email']
+    fields = ['role', 'approval_status', 'is_active', 'first_name', 'last_name', 'email', 'phone', 'telegram', 'bio']
     labels = {
       'role': 'Роль',
       'approval_status': 'Статус',
@@ -30,6 +30,9 @@ class UserApprovalForm(forms.ModelForm):
       'first_name': 'Имя',
       'last_name': 'Фамилия',
       'email': 'Email',
+      'phone': 'Телефон',
+      'telegram': 'Telegram',
+      'bio': 'Краткая информация',
     }
 
   def clean(self):
@@ -37,3 +40,18 @@ class UserApprovalForm(forms.ModelForm):
     if cleaned.get('approval_status') == 'approved' and not cleaned.get('role'):
       self.add_error('role', 'Укажите роль для одобренного пользователя.')
     return cleaned
+
+
+class ProfileForm(forms.ModelForm):
+  class Meta:
+    model = User
+    fields = ['first_name', 'last_name', 'email', 'avatar_file', 'phone', 'telegram', 'bio']
+    labels = {
+      'first_name': 'Имя', 'last_name': 'Фамилия', 'email': 'E-mail',
+      'avatar_file': 'Фото профиля', 'phone': 'Телефон',
+      'telegram': 'Telegram', 'bio': 'Краткая информация',
+    }
+    widgets = {
+      'avatar_file': forms.FileInput(attrs={'class': 'profile-avatar-file', 'accept': 'image/jpeg,image/png,image/webp'}),
+      'bio': forms.Textarea(attrs={'rows': 4}),
+    }

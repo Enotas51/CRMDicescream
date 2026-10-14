@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load humanize %}
-{% block title %}Пользователи{% endblock %}
+{% block title %}Администрирование{% endblock %}
 {% block content %}
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0">Пользователи</h1>
+    <h1 class="h3 mb-0">Администрирование</h1>
   </div>
-  <div class="btn-group mb-3">
+  <div class="status-filter mb-3" role="group" aria-label="Фильтр пользователей">
     <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary {% if not request.GET.status %}active{% endif %}">Все</a>
     <a href="?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">Ожидают</a>
     <a href="?status=approved" class="btn btn-outline-success {% if request.GET.status == 'approved' %}active{% endif %}">Одобрены</a>
@@ -52,6 +52,11 @@
             </form>
             {% else %}
             <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-outline-primary">Изменить</a>
+            {% endif %}
+            {% if u.pk != user.pk %}
+            <a href="{% url 'accounts:user_delete' u.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить пользователя" aria-label="Удалить пользователя">
+              <i class="bi bi-trash"></i>
+            </a>
             {% endif %}
           </td>
         </tr>

@@ -149,6 +149,7 @@ class TransactionCreateView(CanEditMixin, CreateView):
 
   def get_initial(self):
     initial = super().get_initial()
+    initial['date'] = timezone.localdate()
     debt_id = self.request.GET.get('debt')
     debtor_id = self.request.GET.get('debtor')
     if debt_id:
@@ -254,6 +255,7 @@ class ReserveTransferCreateView(CanEditMixin, CreateView):
 
   def get_initial(self):
     initial = super().get_initial()
+    initial['date'] = timezone.localdate()
     direction = self.request.GET.get('direction')
     source = self.request.GET.get('source')
     if direction == 'from_reserve':
@@ -358,6 +360,7 @@ class UtilitiesOperationCreateView(CanEditMixin, CreateView):
 
   def get_initial(self):
     initial = super().get_initial()
+    initial['date'] = timezone.localdate()
     op_type = self.request.GET.get('type')
     if op_type == 'expense':
       from .models import UtilitiesOperationType

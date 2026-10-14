@@ -17,8 +17,8 @@ class ProjectForm(forms.ModelForm):
       'name': forms.TextInput(attrs={'class': 'form-control'}),
       'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
       'status': forms.Select(attrs={'class': 'form-select'}),
-      'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-      'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+      'start_date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+      'end_date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
       'budget': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
       'members': forms.SelectMultiple(attrs={'class': 'form-select'}),
       'color': forms.TextInput(attrs={'class': 'form-control', 'type': 'color'}),
@@ -57,14 +57,14 @@ class ProjectEquipmentForm(forms.ModelForm):
       }),
       'ozon_url': forms.URLInput(attrs={
         'class': 'form-control equipment-ozon-url',
-        'placeholder': 'https://www.ozon.ru/product/...',
+        'placeholder': 'Ссылка OZON, Wildberries, AliExpress или другого магазина',
       }),
     }
     labels = {
       'name': 'Наименование',
       'price': 'Цена, ₽',
       'quantity': 'Кол-во',
-      'ozon_url': 'Ссылка OZON',
+      'ozon_url': 'Ссылка на товар (необязательно)',
     }
 
   def __init__(self, *args, **kwargs):
@@ -95,7 +95,7 @@ class ProjectEquipmentForm(forms.ModelForm):
       return cleaned
 
     if not name:
-      self.add_error('name', 'Укажите наименование или подтяните товар с OZON.')
+      self.add_error('name', 'Укажите наименование или подтяните товар из магазина.')
     if price is None:
       self.add_error('price', 'Укажите цену.')
     if not quantity or quantity < 1:
@@ -139,8 +139,8 @@ class ProjectQuickUpdateForm(forms.ModelForm):
       'status': forms.Select(attrs={'class': 'form-select form-select-sm'}),
       'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
       'budget': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-      'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-      'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+      'start_date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+      'end_date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
     }
     labels = {
       'status': 'Статус',
@@ -161,14 +161,14 @@ class ProjectEquipmentQuickForm(forms.ModelForm):
       'quantity': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '1'}),
       'ozon_url': forms.URLInput(attrs={
         'class': 'form-control form-control-sm',
-        'placeholder': 'https://www.ozon.ru/product/...',
+        'placeholder': 'Ссылка OZON, Wildberries, AliExpress или другого магазина',
       }),
     }
     labels = {
       'name': 'Наименование',
       'price': 'Цена, ₽',
       'quantity': 'Кол-во',
-      'ozon_url': 'Ссылка OZON',
+      'ozon_url': 'Ссылка на товар (необязательно)',
     }
 
 
@@ -180,8 +180,12 @@ class ProjectEquipmentEditForm(forms.ModelForm):
       'name': forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
       'price': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'min': '0'}),
       'quantity': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': '1'}),
-      'ozon_url': forms.URLInput(attrs={'class': 'form-control form-control-sm'}),
+      'ozon_url': forms.URLInput(attrs={
+        'class': 'form-control form-control-sm',
+        'placeholder': 'Ссылка на товар',
+      }),
     }
+    labels = {'ozon_url': 'Ссылка на товар (необязательно)'}
 
 
 class ProjectFileForm(forms.ModelForm):

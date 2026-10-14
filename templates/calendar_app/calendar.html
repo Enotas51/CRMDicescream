@@ -5,7 +5,6 @@
   <div class="calendar-toolbar d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
       <h1 class="h3 mb-0">{{ month_name }} {{ year }}</h1>
-      <div class="small text-muted">Классический вид · неделя с понедельника</div>
     </div>
     <div class="d-flex gap-2 flex-wrap align-items-center">
       <div class="btn-group">
@@ -26,7 +25,7 @@
   <div class="calendar-legend small text-muted mb-2 d-flex gap-3 flex-wrap">
     <span><span class="calendar-legend-dot calendar-legend-event"></span> Событие</span>
     <span><span class="calendar-legend-dot calendar-legend-task"></span> Задача</span>
-    <span><span class="calendar-legend-dot calendar-legend-today"></span> Сегодня</span>
+    <span><span class="calendar-legend-dot calendar-legend-holiday"></span> Праздник РФ</span>
   </div>
 
   <div class="calendar-classic-wrap">
@@ -46,7 +45,7 @@
         {% for week in calendar_weeks %}
         <tr>
           {% for cell in week %}
-          <td class="calendar-classic-day {% if not cell.in_month %}other-month{% endif %} {% if cell.date == today %}today{% endif %} {% if cell.is_weekend %}weekend{% endif %}">
+          <td class="calendar-classic-day {% if not cell.in_month %}other-month{% endif %} {% if cell.date == today %}today{% endif %} {% if cell.is_weekend %}weekend{% endif %}" data-calendar-day data-day-label="{{ cell.date|date:'d.m.Y' }}" data-day-date="{{ cell.date|date:'Y-m-d' }}" title="Открыть расписание дня">
             <div class="calendar-day-header">
               <span class="day-number {% if cell.date == today %}day-number-today{% endif %}">{{ cell.date.day }}</span>
               {% if not cell.in_month %}
@@ -54,18 +53,69 @@
               {% endif %}
             </div>
             <div class="calendar-day-body">
+              {% for holiday in cell.holidays %}
+              <div class="calendar-holiday" title="{{ holiday.name }}"><i class="bi bi-star-fill"></i> <span class="calendar-event-title">{{ holiday.name|truncatechars:22 }}</span></div>
+              {% endfor %}
               {% for event in cell.events %}
-              <a href="{% url 'calendar_app:detail' event.pk %}" class="calendar-event" style="--event-color: {{ event.color }}" title="{{ event.title }}">
+              <a href="{% url 'calendar_app:detail' event.pk %}" class="calendar-event" style="--event-color: {{ event.color }}" title="{{ event.title }}" data-calendar-event-id="{{ event.pk }}" data-calendar-event-title="{{ event.title }}">
                 {% if not event.all_day %}<span class="calendar-event-time">{{ event.start|date:"H:i" }}</span>{% endif %}
                 <span class="calendar-event-title">{{ event.title|truncatechars:22 }}</span>
               </a>
               {% endfor %}
               {% for task in cell.tasks %}
-              <a href="{% url 'tasks:detail' task.pk %}" class="calendar-task" title="{{ task.title }}">
+              <a href="{% url 'tasks:detail' task.pk %}" class="calendar-task calendar-task-info-trigger" title="{{ task.title }}" data-task-title="{{ task.title }}" data-task-description="{{ task.description }}" data-task-project="{{ task.project|default:'Без проекта' }}" data-task-status="{{ task.get_status_display }}" data-task-priority="{{ task.get_priority_display }}" data-task-assignee="{{ task.assignee|default:'Не назначен' }}" data-task-due="{% if task.due_date %}{{ task.due_date|date:'d.m.Y' }}{% else %}Не задан{% endif %}" data-task-detail-url="{% url 'tasks:detail' task.pk %}"{% if can_edit %} data-task-edit-url="{% url 'tasks:edit' task.pk %}" data-task-delete-url="{% url 'tasks:delete' task.pk %}"{% endif %}>
                 <i class="bi bi-check2-square"></i> {{ task.title|truncatechars:20 }}
               </a>
               {% endfor %}
+              <div class="mobile-day-dots" aria-hidden="true">
+                {% if cell.events %}<span class="mobile-day-dot mobile-day-dot-event"></span>{% endif %}
+                {% if cell.tasks %}<span class="mobile-day-dot mobile-day-dot-task"></span>{% endif %}
+                {% if cell.holidays %}<span class="mobile-day-dot mobile-day-dot-holiday"></span>{% endif %}
+              </div>
             </div>
+            <template class="calendar-day-modal-items">
+              {% for holiday in cell.holidays %}
+              <div class="calendar-modal-item calendar-modal-holiday" title="{{ holiday.name }}">
+                <span class="calendar-modal-icon"><i class="bi bi-star-fill"></i></span>
+                <span>{{ holiday.name }}</span>
+              </div>
+              {% endfor %}
+              {% for event in cell.events %}
+              <a href="{% url 'calendar_app:detail' event.pk %}" class="calendar-modal-item calendar-modal-event" data-calendar-event-id="{{ event.pk }}" data-calendar-event-title="{{ event.title }}">
+                <span class="calendar-modal-icon"><i class="bi bi-calendar-event"></i></span>
+                <span>{% if not event.all_day %}<small>{{ event.start|date:"H:i" }}</small> {% endif %}{{ event.title }}</span>
+                <i class="bi bi-chevron-right"></i>
+              </a>
+              {% endfor %}
+              {% for task in cell.tasks %}
+              <a href="{% url 'tasks:detail' task.pk %}" class="calendar-modal-item calendar-modal-task calendar-task-info-trigger" data-task-title="{{ task.title }}" data-task-description="{{ task.description }}" data-task-project="{{ task.project|default:'Без проекта' }}" data-task-status="{{ task.get_status_display }}" data-task-priority="{{ task.get_priority_display }}" data-task-assignee="{{ task.assignee|default:'Не назначен' }}" data-task-due="{% if task.due_date %}{{ task.due_date|date:'d.m.Y' }}{% else %}Не задан{% endif %}" data-task-detail-url="{% url 'tasks:detail' task.pk %}"{% if can_edit %} data-task-edit-url="{% url 'tasks:edit' task.pk %}" data-task-delete-url="{% url 'tasks:delete' task.pk %}"{% endif %}>
+                <span class="calendar-modal-icon"><i class="bi bi-check2-square"></i></span>
+                <span>{{ task.title }}</span>
+                <i class="bi bi-chevron-right"></i>
+              </a>
+              {% endfor %}
+            </template>
+            {% for event in cell.events %}
+            <template class="calendar-event-detail-template" data-calendar-event-id="{{ event.pk }}">
+              <div class="calendar-event-detail">
+                <div class="calendar-event-detail-time">
+                  <i class="bi bi-clock"></i>
+                  {% if event.all_day %}Весь день{% else %}{{ event.start|date:"H:i" }}{% if event.end %} — {{ event.end|date:"H:i" }}{% endif %}{% endif %}
+                </div>
+                {% if event.description %}<div class="calendar-event-detail-description">{{ event.description|linebreaksbr }}</div>{% endif %}
+                <dl class="calendar-event-detail-meta mb-0">
+                  {% if event.location %}<div><dt>Место</dt><dd>{{ event.location }}</dd></div>{% endif %}
+                  {% if event.project %}<div><dt>Проект</dt><dd>{{ event.project.name }}</dd></div>{% endif %}
+                </dl>
+                {% if event.can_edit %}
+                <div class="calendar-event-detail-actions">
+                  <a href="{% url 'calendar_app:edit' event.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i> Редактировать</a>
+                  <a href="{% url 'calendar_app:delete' event.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash3"></i> Удалить</a>
+                </div>
+                {% endif %}
+              </div>
+            </template>
+            {% endfor %}
           </td>
           {% endfor %}
         </tr>
@@ -74,4 +124,121 @@
     </table>
   </div>
 </div>
+
+<div class="modal fade" id="calendarDayModal" tabindex="-1" aria-labelledby="calendarDayModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content calendar-day-modal">
+      <div class="modal-header">
+        <div class="calendar-modal-heading">
+          <button type="button" class="calendar-modal-back" id="calendarDayModalBack" hidden aria-label="К списку событий" title="К списку событий"><i class="bi bi-arrow-left"></i></button>
+          <div>
+            <div class="calendar-modal-eyebrow">Расписание</div>
+            <h2 class="modal-title fs-5" id="calendarDayModalTitle"></h2>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body" id="calendarDayModalItems"></div>
+      {% if can_edit %}
+      <div class="calendar-modal-create" id="calendarDayModalCreate" hidden>
+        <a class="btn btn-primary btn-sm w-100" id="calendarDayModalCreateLink" href="{% url 'calendar_app:create' %}"><i class="bi bi-plus-lg"></i> Создать событие</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% include "tasks/_task_info_modal.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var modalEl = document.getElementById('calendarDayModal');
+  var modalTitle = document.getElementById('calendarDayModalTitle');
+  var modalItems = document.getElementById('calendarDayModalItems');
+  var modalBack = document.getElementById('calendarDayModalBack');
+  var modalCreate = document.getElementById('calendarDayModalCreate');
+  var modalCreateLink = document.getElementById('calendarDayModalCreateLink');
+  if (!modalEl || !modalTitle || !modalItems || !modalBack || !window.bootstrap) return;
+
+  var dayModal = new bootstrap.Modal(modalEl);
+  var currentDayLabel = '';
+  var currentDayDate = '';
+  var currentDayItems = '';
+
+  function showDayList() {
+    modalTitle.textContent = currentDayLabel;
+    modalItems.innerHTML = currentDayItems || '<p class="calendar-modal-empty mb-0">На этот день ничего не запланировано.</p>';
+    modalBack.hidden = true;
+    if (modalCreate && modalCreateLink) {
+      modalCreateLink.href = '{% url "calendar_app:create" %}?date=' + currentDayDate;
+      modalCreate.hidden = false;
+    }
+  }
+
+  document.querySelectorAll('[data-calendar-day]').forEach(function (day) {
+    day.addEventListener('click', function (event) {
+      if (event.target.closest('a')) return;
+      var source = day.querySelector('.calendar-day-modal-items');
+      currentDayLabel = day.dataset.dayLabel;
+      currentDayDate = day.dataset.dayDate;
+      currentDayItems = source ? source.innerHTML.trim() : '';
+      showDayList();
+      dayModal.show();
+    });
+  });
+
+  function showEventDetail(eventItem) {
+    var day = eventItem.closest('[data-calendar-day]');
+    if (day) {
+      var source = day.querySelector('.calendar-day-modal-items');
+      currentDayLabel = day.dataset.dayLabel;
+      currentDayDate = day.dataset.dayDate;
+      currentDayItems = source ? source.innerHTML.trim() : '';
+    }
+    if (!eventItem) return;
+    var eventId = eventItem.dataset.calendarEventId;
+    var detailTemplate = document.querySelector('.calendar-event-detail-template[data-calendar-event-id="' + eventId + '"]');
+    if (!detailTemplate) return;
+    modalTitle.textContent = eventItem.dataset.calendarEventTitle;
+    modalItems.innerHTML = detailTemplate.innerHTML.trim();
+    modalBack.hidden = false;
+    if (modalCreate) modalCreate.hidden = true;
+    dayModal.show();
+  }
+
+  document.addEventListener('click', function (event) {
+    var eventItem = event.target.closest('[data-calendar-event-id]');
+    if (!eventItem) return;
+    event.preventDefault();
+    showEventDetail(eventItem);
+  });
+
+  modalBack.addEventListener('click', showDayList);
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var modal = document.getElementById('taskInfoModal');
+  if (!modal || !window.bootstrap) return;
+  document.querySelectorAll('.calendar-task-info-trigger').forEach(function (card) {
+    card.addEventListener('click', function (event) {
+      event.preventDefault();
+      modal.querySelector('[data-task-info-title]').textContent = card.dataset.taskTitle;
+      modal.querySelector('[data-task-info-description]').textContent = card.dataset.taskDescription || 'Описание не добавлено.';
+      modal.querySelector('[data-task-info-project]').textContent = card.dataset.taskProject || 'Без проекта';
+      modal.querySelector('[data-task-info-status]').textContent = card.dataset.taskStatus;
+      modal.querySelector('[data-task-info-priority]').textContent = card.dataset.taskPriority;
+      modal.querySelector('[data-task-info-assignee]').textContent = card.dataset.taskAssignee;
+      modal.querySelector('[data-task-info-due]').textContent = card.dataset.taskDue;
+      modal.querySelector('[data-task-info-open]').href = card.dataset.taskDetailUrl;
+      var edit = modal.querySelector('[data-task-info-edit]');
+      var remove = modal.querySelector('[data-task-info-delete]');
+      if (edit) edit.href = card.dataset.taskEditUrl || '#';
+      if (remove) remove.href = card.dataset.taskDeleteUrl || '#';
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  });
+});
+</script>
 {% endblock %}

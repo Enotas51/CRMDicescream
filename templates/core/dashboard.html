@@ -16,54 +16,35 @@
   {% endif %}
 
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
+    <div class="col-6 col-md-4">
+      <a href="{% url 'finance:transactions' %}" class="card stat-card stat-card-link">
         <div class="card-body">
           <div class="text-muted small">Баланс</div>
-          <div class="h4 mb-0 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">{{ balance|floatformat:2 }} ₽</div>
+          <div class="h4 mb-0 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">{{ balance|floatformat:0 }} ₽</div>
         </div>
-      </div>
+      </a>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
+    <div class="col-6 col-md-4">
+      <a href="{% url 'finance:reserve' %}" class="card stat-card stat-card-link">
         <div class="card-body">
           <div class="text-muted small">Резерв</div>
-          <div class="h4 mb-0 text-info"><a href="{% url 'finance:reserve' %}" class="text-decoration-none text-info">{{ reserve_balance|floatformat:2 }} ₽</a></div>
+          <div class="h4 mb-0 text-info">{{ reserve_balance|floatformat:0 }} ₽</div>
         </div>
-      </div>
+      </a>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
+    <div class="col-6 col-md-4">
+      <a href="{% url 'finance:utilities' %}" class="card stat-card stat-card-link">
         <div class="card-body">
           <div class="text-muted small">Коммунальные</div>
-          <div class="h4 mb-0 text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}"><a href="{% url 'finance:utilities' %}" class="text-decoration-none text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}">{{ utilities_balance|floatformat:2 }} ₽</a></div>
+          <div class="h4 mb-0 text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}">{{ utilities_balance|floatformat:0 }} ₽</div>
         </div>
-      </div>
+      </a>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
-        <div class="card-body">
-          <div class="text-muted small">Проекты</div>
-          <div class="h4 mb-0">{{ projects|length }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
-        <div class="card-body">
-          <div class="text-muted small">Задачи на неделю</div>
-          <div class="h4 mb-0">{{ tasks_due|length }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
-        <div class="card-body">
-          <div class="text-muted small">События</div>
-          <div class="h4 mb-0">{{ upcoming_events|length }}</div>
-        </div>
-      </div>
-    </div>
+  </div>
+
+  <div class="row g-3 mb-4 dashboard-charts">
+    <div class="col-lg-6"><div class="card"><div class="card-header">Динамика баланса за месяц</div><div class="card-body"><canvas id="balanceChart" height="130"></canvas></div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">Динамика резерва за месяц</div><div class="card-body"><canvas id="reserveChart" height="130"></canvas></div></div></div>
   </div>
 
   <div class="row g-3">
@@ -71,53 +52,125 @@
       <div class="card h-100">
         <div class="card-header d-flex justify-content-between">
           <span><i class="bi bi-folder"></i> Активные проекты</span>
-          {% if can_edit %}<a href="{% url 'projects:create' %}" class="btn btn-sm btn-primary">+ Проект</a>{% endif %}
         </div>
-        <ul class="list-group list-group-flush">
+        <div class="dashboard-projects-grid">
           {% for project in projects %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <a href="{% url 'projects:detail' project.pk %}">{{ project.name }}</a>
+          <a href="{% url 'projects:detail' project.pk %}" class="dashboard-project-card">
+            <strong>{{ project.name }}</strong>
             <span class="badge bg-secondary">{{ project.get_status_display }}</span>
-          </li>
+          </a>
           {% empty %}
-          <li class="list-group-item text-muted">Нет проектов</li>
+          <div class="text-muted dashboard-tasks-empty">Нет проектов</div>
           {% endfor %}
-        </ul>
+        </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="card h-100">
         <div class="card-header d-flex justify-content-between">
-          <span><i class="bi bi-check2-square"></i> Срочные задачи</span>
-          {% if can_edit %}<a href="{% url 'tasks:create' %}" class="btn btn-sm btn-primary">+ Задача</a>{% endif %}
+          <span><i class="bi bi-check2-square"></i> Задачи</span>
         </div>
-        <ul class="list-group list-group-flush">
+        <div class="dashboard-tasks-grid">
           {% for task in tasks_due %}
-          <li class="list-group-item d-flex justify-content-between">
-            <a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a>
-            <small class="text-muted">{{ task.due_date|date:"d.m" }}</small>
-          </li>
+          <a href="{% url 'tasks:detail' task.pk %}" class="dashboard-task-card dashboard-info-trigger" data-modal="task" data-title="{{ task.title }}" data-description="{{ task.description }}" data-extra="Исполнитель: {{ task.assignee|default:'не назначен' }}" data-meta="{{ task.get_status_display }} · {{ task.get_priority_display }} · Срок: {{ task.due_date|date:'d.m.Y'|default:'не задан' }}{% if task.project %} · {{ task.project.name }}{% endif %}" data-project="{{ task.project|default:'Без проекта' }}" data-status="{{ task.get_status_display }}" data-priority="{{ task.get_priority_display }}" data-assignee="{{ task.assignee|default:'Не назначен' }}" data-due="{% if task.due_date %}{{ task.due_date|date:'d.m.Y' }}{% else %}Не задан{% endif %}" data-detail-url="{% url 'tasks:detail' task.pk %}"{% if can_edit %} data-edit-url="{% url 'tasks:edit' task.pk %}" data-delete-url="{% url 'tasks:delete' task.pk %}"{% endif %}>
+            <strong>{{ task.title }}</strong>
+            <span class="dashboard-task-date">{{ task.due_date|date:"d.m" }}</span>
+          </a>
           {% empty %}
-          <li class="list-group-item text-muted">Нет срочных задач</li>
+          <div class="text-muted dashboard-tasks-empty">Задач нет</div>
           {% endfor %}
-        </ul>
+        </div>
       </div>
     </div>
-    <div class="col-12">
-      <div class="card">
+    <div class="col-lg-6">
+      <div class="card h-100">
         <div class="card-header"><i class="bi bi-calendar-event"></i> Ближайшие события</div>
         <ul class="list-group list-group-flush">
           {% for event in upcoming_events %}
-          <li class="list-group-item d-flex justify-content-between">
-            <a href="{% url 'calendar_app:detail' event.pk %}">{{ event.title }}</a>
+          <a href="{% url 'calendar_app:detail' event.pk %}" class="dashboard-line-card dashboard-info-trigger" data-modal="event" data-title="{{ event.title }}" data-description="{{ event.description }}" data-extra="{% if event.location %}Место: {{ event.location }}{% endif %}{% if event.project %} · Проект: {{ event.project.name }}{% endif %}" data-meta="{{ event.start|date:'d.m.Y H:i' }}{% if event.end %} — {{ event.end|date:'H:i' }}{% endif %}" data-detail-url="{% url 'calendar_app:detail' event.pk %}">
+            <span class="text-truncate">{{ event.title }}</span>
             <small>{{ event.start|date:"d.m H:i" }}</small>
-          </li>
+          </a>
           {% empty %}
           <li class="list-group-item text-muted">Нет предстоящих событий</li>
           {% endfor %}
         </ul>
       </div>
     </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-cash-stack"></i> Последние транзакции</span>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for movement in recent_movements %}
+          <a href="{{ movement.url }}" class="dashboard-line-card dashboard-info-trigger gap-2" data-modal="transaction" data-title="{{ movement.title }}" data-extra="{% if movement.category %}Категория: {{ movement.category }}{% endif %}{% if movement.project %} · Проект: {{ movement.project }}{% endif %}" data-meta="{{ movement.date|date:'d.m.Y' }} · {{ movement.kind }} · {{ movement.amount|floatformat:0 }} ₽" data-detail-url="{{ movement.url }}">
+            <div class="dashboard-transaction-line min-w-0">
+              <span class="text-truncate">{{ movement.title }}</span>
+              <small class="text-muted text-nowrap">{{ movement.date|date:"d.m" }} · {{ movement.kind }}</small>
+            </div>
+            <strong class="text-{{ movement.tone }} text-nowrap">{{ movement.amount|floatformat:0 }} ₽</strong>
+          </a>
+          {% empty %}
+          <li class="list-group-item text-muted">Денежных движений пока нет</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
+{% include "tasks/_task_info_modal.html" %}
+<div class="modal fade" id="dashboardEventModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5">Событие</h2><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><h3 class="h5" data-info-title></h3><p class="text-muted" data-info-meta></p><p class="dashboard-modal-extra" data-info-extra></p><div class="dashboard-modal-description" data-info-description></div></div><div class="modal-footer"><a class="btn btn-primary" data-info-open href="#">Открыть событие</a></div></div></div></div>
+<div class="modal fade" id="dashboardTransactionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5">Транзакция</h2><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><h3 class="h5" data-info-title></h3><p class="text-muted" data-info-meta></p><p class="dashboard-modal-extra" data-info-extra></p></div><div class="modal-footer"><a class="btn btn-primary" data-info-open href="#">Открыть транзакцию</a></div></div></div></div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var labels = {{ balance_chart|safe }}.map(function (point) { return point.date; });
+  function draw(id, points, color) {
+    var canvas = document.getElementById(id);
+    if (!canvas || typeof Chart === 'undefined') return;
+    new Chart(canvas, { type: 'line', data: { labels: labels, datasets: [{ data: points.map(function (point) { return point.value; }), borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3, pointRadius: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 8 } }, y: { beginAtZero: false } } } });
+  }
+  draw('balanceChart', {{ balance_chart|safe }}, '#10b981');
+  draw('reserveChart', {{ reserve_chart|safe }}, '#22d3ee');
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.dashboard-info-trigger').forEach(function (card) {
+    card.addEventListener('click', function (event) {
+      event.preventDefault();
+      var modalId = card.dataset.modal === 'task' ? 'taskInfoModal' : 'dashboard' + card.dataset.modal.charAt(0).toUpperCase() + card.dataset.modal.slice(1) + 'Modal';
+      var modal = document.getElementById(modalId);
+      modal.querySelector('[data-info-title]').textContent = card.dataset.title;
+      modal.querySelector('[data-info-meta]').textContent = card.dataset.meta;
+      var description = modal.querySelector('[data-info-description]');
+      if (description) description.textContent = card.dataset.description || 'Описание не добавлено.';
+      var extra = modal.querySelector('[data-info-extra]');
+      if (extra) extra.textContent = card.dataset.extra || '';
+      if (card.dataset.modal === 'task') {
+        var fields = {
+          project: card.dataset.project,
+          status: card.dataset.status,
+          priority: card.dataset.priority,
+          assignee: card.dataset.assignee,
+          due: card.dataset.due
+        };
+        Object.keys(fields).forEach(function (key) {
+          var field = modal.querySelector('[data-task-info-' + key + ']');
+          if (field) field.textContent = fields[key] || 'Не задан';
+        });
+      }
+      modal.querySelector('[data-info-open]').href = card.dataset.detailUrl;
+      var edit = modal.querySelector('[data-info-edit]');
+      if (edit) edit.href = card.dataset.editUrl || '#';
+      var remove = modal.querySelector('[data-info-delete]');
+      if (remove) remove.href = card.dataset.deleteUrl || '#';
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  });
+});
+</script>
 {% endblock %}

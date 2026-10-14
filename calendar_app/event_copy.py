@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.utils import timezone
 
@@ -47,7 +47,17 @@ def shift_to_date(dt, target_date):
   )
 
 
-def create_event_copies(source_event, target_dates, created_by):
+def weekly_dates(start_date, until_date):
+  """Dates for a weekly series, excluding the source date."""
+  dates = []
+  current = start_date + timedelta(days=7)
+  while current <= until_date:
+    dates.append(current)
+    current += timedelta(days=7)
+  return dates
+
+
+def create_event_copies(source_event, target_dates, created_by, recurrence_key=None, recurrence_until=None):
   if not target_dates:
     return []
 
@@ -80,6 +90,8 @@ def create_event_copies(source_event, target_dates, created_by):
       color=source_event.color,
       location=source_event.location,
       created_by=created_by,
+      recurrence_key=recurrence_key,
+      recurrence_until=recurrence_until,
     )
     if participant_ids:
       copy.participants.set(participant_ids)

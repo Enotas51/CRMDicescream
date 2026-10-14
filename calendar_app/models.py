@@ -29,6 +29,8 @@ class Event(TimeStampedModel):
   )
   color = models.CharField(_('Цвет'), max_length=7, default='#8b5cf6')
   location = models.CharField(_('Место'), max_length=255, blank=True)
+  recurrence_key = models.UUIDField(null=True, blank=True, db_index=True, editable=False)
+  recurrence_until = models.DateField(null=True, blank=True, editable=False)
 
   class Meta:
     verbose_name = _('Событие')

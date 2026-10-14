@@ -31,7 +31,10 @@ class User(AbstractUser):
     )
     yandex_id = models.CharField(_('ID Яндекс'), max_length=64, blank=True, unique=True, null=True)
     avatar_url = models.URLField(_('Аватар'), blank=True)
+    avatar_file = models.FileField(_('Фото профиля'), upload_to='avatars/', blank=True)
     phone = models.CharField(_('Телефон'), max_length=20, blank=True)
+    telegram = models.CharField(_('Telegram'), max_length=64, blank=True)
+    bio = models.TextField(_('Краткая информация'), blank=True)
 
     class Meta:
         verbose_name = _('Пользователь')

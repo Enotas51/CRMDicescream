@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
@@ -129,5 +130,7 @@ def task_update_status(request, pk):
     form = TaskStatusForm(request.POST, instance=task)
     if form.is_valid():
       form.save()
+      if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True, 'status': task.status})
       messages.success(request, 'Статус обновлён.')
   return redirect('tasks:kanban')

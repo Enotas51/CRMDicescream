@@ -11,11 +11,11 @@
   </div>
   <div class="kanban-board">
     {% for column in kanban_columns %}
-    <div class="kanban-column">
+    <div class="kanban-column" data-status="{{ column.status }}">
       <div class="kanban-column-header">{{ column.label }}</div>
       {% for task in column.tasks %}
-      <div class="kanban-card">
-        <a href="{% url 'tasks:detail' task.pk %}" class="fw-semibold text-decoration-none">{{ task.title }}</a>
+      <div class="kanban-card kanban-card-{{ task.status }}" draggable="true" data-task-id="{{ task.pk }}" data-detail-url="{% url 'tasks:detail' task.pk %}" data-title="{{ task.title }}" data-project="{{ task.project|default:'Без проекта' }}" data-status="{{ task.get_status_display }}" data-priority="{{ task.get_priority_display }}" data-assignee="{{ task.assignee|default:'Не назначен' }}" data-description="{{ task.description }}" data-due="{% if task.due_date %}{{ task.due_date|date:'d.m.Y' }}{% else %}Не задан{% endif %}"{% if can_edit %} data-edit-url="{% url 'tasks:edit' task.pk %}" data-delete-url="{% url 'tasks:delete' task.pk %}"{% endif %} role="button" tabindex="0">
+        <span class="fw-semibold">{{ task.title }}</span>
         {% if task.project %}<div class="small text-muted">{{ task.project.name }}</div>{% endif %}
         {% if task.due_date %}<div class="small"><i class="bi bi-calendar"></i> {{ task.due_date|date:"d.m.Y" }}</div>{% endif %}
         {% if can_edit %}
@@ -36,4 +36,66 @@
     {% endfor %}
   </div>
 </div>
+{% include "tasks/_task_info_modal.html" %}
+{% endblock %}
+{% block extra_js %}
+{% if can_edit %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var dragged = null;
+  var csrf = document.querySelector('input[name=csrfmiddlewaretoken]');
+  document.querySelectorAll('.kanban-card[draggable]').forEach(function (card) {
+    card.addEventListener('dragstart', function (event) {
+      dragged = card;
+      card.classList.add('kanban-card-dragging');
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', function () {
+      card.classList.remove('kanban-card-dragging');
+      dragged = null;
+      document.querySelectorAll('.kanban-column-dragover').forEach(function (column) { column.classList.remove('kanban-column-dragover'); });
+    });
+  });
+  document.querySelectorAll('.kanban-column').forEach(function (column) {
+    column.addEventListener('dragover', function (event) { event.preventDefault(); column.classList.add('kanban-column-dragover'); });
+    column.addEventListener('dragleave', function () { column.classList.remove('kanban-column-dragover'); });
+    column.addEventListener('drop', function (event) {
+      event.preventDefault();
+      column.classList.remove('kanban-column-dragover');
+      if (!dragged || !csrf || dragged.closest('.kanban-column') === column) return;
+      var form = new URLSearchParams({ status: column.dataset.status });
+      fetch('/tasks/' + dragged.dataset.taskId + '/status/', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf.value, 'Content-Type': 'application/x-www-form-urlencoded' }, body: form.toString() })
+        .then(function (response) { if (!response.ok) throw new Error(); return response.json(); })
+        .then(function () { column.appendChild(dragged); })
+        .catch(function () { window.location.reload(); });
+    });
+  });
+});
+</script>
+{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.kanban-card[data-detail-url]').forEach(function (card) {
+    function openDetails(event) {
+      if (event.target.closest('a, button, input, select, textarea, form')) return;
+      var modal = document.getElementById('taskInfoModal');
+      modal.querySelector('[data-task-info-title]').textContent = card.dataset.title;
+      modal.querySelector('[data-task-info-project]').textContent = card.dataset.project;
+      modal.querySelector('[data-task-info-status]').textContent = card.dataset.status;
+      modal.querySelector('[data-task-info-priority]').textContent = card.dataset.priority;
+      modal.querySelector('[data-task-info-assignee]').textContent = card.dataset.assignee;
+      modal.querySelector('[data-task-info-description]').textContent = card.dataset.description || 'Описание не добавлено.';
+      modal.querySelector('[data-task-info-due]').textContent = card.dataset.due;
+      modal.querySelector('[data-task-info-open]').href = card.dataset.detailUrl;
+      var edit = modal.querySelector('[data-task-info-edit]');
+      if (edit) edit.href = card.dataset.editUrl || '#';
+      var remove = modal.querySelector('[data-task-info-delete]');
+      if (remove) remove.href = card.dataset.deleteUrl || '#';
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    }
+    card.addEventListener('click', openDetails);
+    card.addEventListener('keydown', function (event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDetails(event); } });
+  });
+});
+</script>
 {% endblock %}

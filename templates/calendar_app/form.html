@@ -18,6 +18,18 @@
     {% endfor %}
 
     <hr class="my-4">
+    <section class="event-recurrence" aria-labelledby="recurrenceHeading">
+      <h2 class="h6 text-muted mb-2" id="recurrenceHeading">Повторение и копии</h2>
+      <div class="btn-group recurrence-choice mb-3" role="group" aria-label="Способ повторения">
+        <input type="radio" class="btn-check" name="recurrence_type" id="repeatNone" value="none" checked>
+        <label class="btn btn-outline-secondary btn-sm" for="repeatNone">Без повторения</label>
+        <input type="radio" class="btn-check" name="recurrence_type" id="repeatDates" value="dates">
+        <label class="btn btn-outline-secondary btn-sm" for="repeatDates">Выбранные даты</label>
+        <input type="radio" class="btn-check" name="recurrence_type" id="repeatWeekly" value="weekly">
+        <label class="btn btn-outline-secondary btn-sm" for="repeatWeekly">Каждую неделю</label>
+      </div>
+
+      <div id="copyDatesPanel" hidden>
     <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
       <div>
         <h2 class="h6 text-muted mb-0">Копировать на другие даты</h2>
@@ -42,6 +54,15 @@
       Время начала и окончания сохранится таким же, изменится только дата.
       Дата основного события в список копий не попадёт.
     </div>
+      </div>
+
+      <div id="weeklyPanel" class="recurrence-weekly" hidden>
+        <p class="small text-muted mb-2">Повторится в тот же день недели и с тем же временем.</p>
+        <label class="form-label" for="recurrenceUntil">Повторять до</label>
+        <input type="date" name="recurrence_until" id="recurrenceUntil" class="form-control">
+        <div class="form-text">Серию можно будет остановить или ограничить позже.</div>
+      </div>
+    </section>
 
     <hr class="my-4">
 
@@ -68,6 +89,20 @@ document.addEventListener('DOMContentLoaded', function () {
   var container = document.getElementById('copy-date-rows');
   var template = document.getElementById('copyDateRowTemplate');
   var addBtn = document.getElementById('addCopyDateRow');
+  var datesPanel = document.getElementById('copyDatesPanel');
+  var weeklyPanel = document.getElementById('weeklyPanel');
+  var recurrenceUntil = document.getElementById('recurrenceUntil');
+
+  function updateRecurrencePanels() {
+    var selected = document.querySelector('input[name="recurrence_type"]:checked').value;
+    datesPanel.hidden = selected !== 'dates';
+    weeklyPanel.hidden = selected !== 'weekly';
+    recurrenceUntil.required = selected === 'weekly';
+  }
+  document.querySelectorAll('input[name="recurrence_type"]').forEach(function (input) {
+    input.addEventListener('change', updateRecurrencePanels);
+  });
+  updateRecurrencePanels();
 
   function bindRemove(btn) {
     btn.addEventListener('click', function () {

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Команда{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Команда</h1>
+  </div>
+  <div class="team-grid">
+    {% for member in team_members %}
+    <article class="card team-card">
+      <div class="team-card-header">
+        {% if member.avatar_file %}<img src="{{ member.avatar_file.url }}" alt="" class="team-avatar">{% elif member.avatar_url %}<img src="{{ member.avatar_url }}" alt="" class="team-avatar">{% else %}<div class="team-avatar team-avatar-placeholder"><i class="bi bi-person"></i></div>{% endif %}
+        <div class="min-w-0"><h2 class="h5 mb-1 text-truncate">{{ member.get_full_name|default:member.username }}</h2><div class="text-muted">@{{ member.username }}</div></div>
+      </div>
+      {% if member.bio %}<p class="team-bio">{{ member.bio }}</p>{% else %}<p class="team-bio text-muted">Информация не добавлена</p>{% endif %}
+      <dl class="team-contacts mb-0">
+        {% if member.phone %}<div><dt><i class="bi bi-telephone"></i></dt><dd>{{ member.phone }}</dd></div>{% endif %}
+        {% if member.telegram %}<div><dt><i class="bi bi-telegram"></i></dt><dd>{{ member.telegram }}</dd></div>{% endif %}
+        {% if member.email %}<div><dt><i class="bi bi-envelope"></i></dt><dd class="text-truncate">{{ member.email }}</dd></div>{% endif %}
+      </dl>
+    </article>
+    {% empty %}<div class="text-muted">Участников пока нет.</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@ import json
 import re
 from decimal import Decimal, InvalidOperation
 from html import unescape
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 import requests
 
@@ -23,18 +23,60 @@ HEADERS = {
 }
 
 
-def extract_ozon_path(url: str) -> str:
+def _is_ozon_host(host: str) -> bool:
+  host = (host or '').lower().split(':', 1)[0].rstrip('.')
+  return host == 'ozon.ru' or host.endswith('.ozon.ru')
+
+
+def resolve_ozon_url(url: str) -> str:
+  """Return a canonical product URL for both full and ozon.ru/t short links."""
   url = (url or '').strip()
   if not url:
     raise OzonFetchError('Укажите ссылку на товар OZON')
   if not url.startswith('http'):
     url = 'https://' + url
-  parsed = urlparse(url)
-  if 'ozon.ru' not in parsed.netloc.lower():
-    raise OzonFetchError('Ссылка должна быть с сайта ozon.ru')
+
+  current_url = url
+  for _ in range(5):
+    parsed = urlparse(current_url)
+    if parsed.scheme not in {'http', 'https'} or not _is_ozon_host(parsed.netloc):
+      raise OzonFetchError('Ссылка должна быть с сайта ozon.ru')
+
+    path = unquote(parsed.path)
+    if '/product/' in path:
+      if not path.endswith('/'):
+        path += '/'
+      return f'https://www.ozon.ru{path}'
+
+    if not path.startswith('/t/'):
+      raise OzonFetchError('Нужна ссылка на товар OZON: короткая /t/... или полная /product/...')
+
+    try:
+      response = requests.get(
+        current_url,
+        headers=HEADERS,
+        timeout=12,
+        allow_redirects=False,
+        stream=True,
+      )
+    except requests.RequestException as exc:
+      raise OzonFetchError('Не удалось раскрыть короткую ссылку OZON') from exc
+
+    try:
+      location = response.headers.get('Location', '').strip()
+    finally:
+      response.close()
+
+    if not location:
+      raise OzonFetchError('OZON не раскрыл короткую ссылку. Попробуйте открыть её и скопировать полный адрес.')
+    current_url = urljoin(current_url, location)
+
+  raise OzonFetchError('Слишком много перенаправлений в короткой ссылке OZON')
+
+
+def extract_ozon_path(url: str) -> str:
+  parsed = urlparse(resolve_ozon_url(url))
   path = unquote(parsed.path)
-  if '/product/' not in path:
-    raise OzonFetchError('Ссылка должна вести на страницу товара (/product/...)')
   if not path.endswith('/'):
     path += '/'
   return path

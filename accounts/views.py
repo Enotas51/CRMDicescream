@@ -1,11 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.generic import ListView, UpdateView
+from django.views.generic import DeleteView, ListView, UpdateView
 
-from .forms import UserApprovalForm
+from .forms import ProfileForm, UserApprovalForm
 from .models import ApprovalStatus, Role
-from .permissions import AdminRequiredMixin
+from .permissions import AdminRequiredMixin, ApprovedUserMixin
 
 User = get_user_model()
 
@@ -27,6 +28,25 @@ class UserListView(AdminRequiredMixin, ListView):
     if status:
       qs = qs.filter(approval_status=status)
     return qs
+
+
+class TeamView(ApprovedUserMixin, ListView):
+  model = User
+  template_name = 'accounts/team.html'
+  context_object_name = 'team_members'
+
+  def get_queryset(self):
+    return User.objects.filter(approval_status=ApprovalStatus.APPROVED).order_by('first_name', 'last_name', 'username')
+
+
+class ProfileView(ApprovedUserMixin, UpdateView):
+  model = User
+  form_class = ProfileForm
+  template_name = 'accounts/profile.html'
+  success_url = '/accounts/profile/'
+
+  def get_object(self, queryset=None):
+    return self.request.user
 
 
 def approve_user(request, pk):
@@ -67,3 +87,31 @@ class UserUpdateView(AdminRequiredMixin, UpdateView):
     user.save()
     messages.success(self.request, 'Пользователь обновлён.')
     return redirect(self.success_url)
+
+
+class UserDeleteView(AdminRequiredMixin, DeleteView):
+  model = User
+  template_name = 'accounts/user_confirm_delete.html'
+  success_url = reverse_lazy('accounts:user_list')
+
+  def dispatch(self, request, *args, **kwargs):
+    target = self.get_object()
+    if target.pk == request.user.pk:
+      messages.error(request, 'Нельзя удалить собственный аккаунт.')
+      return redirect('accounts:user_list')
+    if (
+      target.role == Role.ADMIN
+      and target.approval_status == ApprovalStatus.APPROVED
+      and not User.objects.filter(
+        role=Role.ADMIN,
+        approval_status=ApprovalStatus.APPROVED,
+      ).exclude(pk=target.pk).exists()
+    ):
+      messages.error(request, 'Нельзя удалить единственного активного администратора.')
+      return redirect('accounts:user_list')
+    return super().dispatch(request, *args, **kwargs)
+
+  def form_valid(self, form):
+    username = self.object.username
+    messages.success(self.request, f'Пользователь {username} удалён.')
+    return super().form_valid(form)

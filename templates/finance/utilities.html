@@ -4,10 +4,12 @@
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h1 class="h3 mb-0">Коммунальные услуги</h1>
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="d-flex gap-2 flex-wrap finance-action-bar">
+      {% if can_edit %}
+      <a href="{% url 'finance:utilities_create' %}?type=deposit" class="btn btn-primary btn-sm finance-action-primary">+ Пополнить</a>
+      {% endif %}
       <a href="{% url 'finance:dashboard' %}" class="btn btn-outline-secondary btn-sm">← Финансы</a>
       {% if can_edit %}
-      <a href="{% url 'finance:utilities_create' %}?type=deposit" class="btn btn-primary btn-sm">+ Пополнить</a>
       <a href="{% url 'finance:utilities_create' %}?type=deposit&source=balance" class="btn btn-outline-primary btn-sm">+ С баланса</a>
       <a href="{% url 'finance:utilities_create' %}?type=expense" class="btn btn-outline-danger btn-sm">− Расход</a>
       {% endif %}

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from pathlib import Path
 
 from django.db import models
 from django.conf import settings
@@ -125,6 +126,11 @@ class ProjectFile(TimeStampedModel):
   @property
   def display_name(self):
     return self.name or (self.file.name.split('/')[-1] if self.file else '—')
+
+  @property
+  def file_extension(self):
+    suffix = Path(self.file.name).suffix if self.file else ''
+    return suffix.lstrip('.').upper() or 'FILE'
 
   def save(self, *args, **kwargs):
     if not self.name and self.file:

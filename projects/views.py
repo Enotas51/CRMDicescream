@@ -1,7 +1,8 @@
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
@@ -10,14 +11,21 @@ from finance.balances import compute_finance_balances
 from .equipment_order import InsufficientBalanceError, charge_equipment_order
 from .forms import (
   ProjectEquipmentEditForm,
-  ProjectEquipmentFormSet,
   ProjectEquipmentQuickForm,
   ProjectFileForm,
   ProjectForm,
   ProjectQuickUpdateForm,
 )
 from .models import Project, ProjectEquipment, ProjectFile
+from .models import ProjectStatus
 from .ozon import OzonFetchError, fetch_ozon_product, parse_ozon_text
+from .marketplaces import MarketplaceFetchError, fetch_marketplace_product
+from tasks.forms import TaskForm
+import io
+import re
+import zipfile
+from pathlib import Path
+from urllib.parse import quote
 
 
 def _redirect_project_detail(project):
@@ -64,12 +72,17 @@ class ProjectDetailView(ApprovedUserMixin, DetailView):
     ctx['equipment_total'] = self.object.equipment_total
     ctx['project_files'] = self.object.files.select_related('created_by').all()
     ctx['can_edit'] = user_can_edit_object(self.request.user, self.object)
+    ctx['project_status_choices'] = ProjectStatus.choices
     balances = compute_finance_balances()
     ctx['main_balance'] = balances['main_balance']
     if ctx['can_edit']:
       ctx['quick_form'] = ProjectQuickUpdateForm(instance=self.object)
       ctx['equipment_add_form'] = ProjectEquipmentQuickForm()
       ctx['file_form'] = ProjectFileForm()
+      ctx['task_form'] = TaskForm(initial={
+        'project': self.object.pk,
+        'due_date': timezone.localdate(),
+      })
     return ctx
 
 
@@ -79,34 +92,10 @@ class ProjectCreateView(CanEditMixin, CreateView):
   template_name = 'projects/form.html'
   success_url = reverse_lazy('projects:list')
 
-  def get_context_data(self, **kwargs):
-    ctx = super().get_context_data(**kwargs)
-    if self.request.POST:
-      ctx['equipment_formset'] = ProjectEquipmentFormSet(self.request.POST, prefix='equipment')
-    else:
-      ctx['equipment_formset'] = ProjectEquipmentFormSet(prefix='equipment')
-    return ctx
-
-  def post(self, request, *args, **kwargs):
-    self.object = None
-    form = self.get_form()
-    formset = ProjectEquipmentFormSet(self.request.POST, prefix='equipment')
-    if form.is_valid() and formset.is_valid():
-      return self.form_valid(form, formset)
-    return self.form_invalid(form, formset)
-
-  def form_valid(self, form, formset):
+  def form_valid(self, form):
     form.instance.created_by = self.request.user
-    self.object = form.save()
-    formset.instance = self.object
-    formset.save()
     messages.success(self.request, 'Проект создан.')
-    return redirect(self.success_url)
-
-  def form_invalid(self, form, formset):
-    return self.render_to_response(
-      self.get_context_data(form=form, equipment_formset=formset),
-    )
+    return super().form_valid(form)
 
 
 class ProjectUpdateView(CanEditMixin, UpdateView):
@@ -121,39 +110,9 @@ class ProjectUpdateView(CanEditMixin, UpdateView):
       return redirect('projects:detail', pk=self.object.pk)
     return super().dispatch(request, *args, **kwargs)
 
-  def get_context_data(self, **kwargs):
-    ctx = super().get_context_data(**kwargs)
-    if self.request.POST:
-      ctx['equipment_formset'] = ProjectEquipmentFormSet(
-        self.request.POST,
-        instance=self.object,
-        prefix='equipment',
-      )
-    else:
-      ctx['equipment_formset'] = ProjectEquipmentFormSet(
-        instance=self.object,
-        prefix='equipment',
-      )
-    return ctx
-
-  def post(self, request, *args, **kwargs):
-    self.object = self.get_object()
-    form = self.get_form()
-    formset = ProjectEquipmentFormSet(self.request.POST, instance=self.object, prefix='equipment')
-    if form.is_valid() and formset.is_valid():
-      return self.form_valid(form, formset)
-    return self.form_invalid(form, formset)
-
-  def form_valid(self, form, formset):
-    self.object = form.save()
-    formset.save()
+  def form_valid(self, form):
     messages.success(self.request, 'Проект обновлён.')
-    return redirect(self.get_success_url())
-
-  def form_invalid(self, form, formset):
-    return self.render_to_response(
-      self.get_context_data(form=form, equipment_formset=formset),
-    )
+    return super().form_valid(form)
 
   def get_success_url(self):
     return reverse_lazy('projects:detail', kwargs={'pk': self.object.pk})
@@ -188,6 +147,18 @@ def project_quick_update_view(request, pk):
 
 
 @require_POST
+def project_status_view(request, pk):
+  project = _get_editable_project(request, pk)
+  if not project:
+    return redirect('projects:detail', pk=pk)
+  status = request.POST.get('status', '')
+  if status in ProjectStatus.values:
+    project.status = status
+    project.save(update_fields=['status', 'updated_at'])
+  return _redirect_project_detail(project)
+
+
+@require_POST
 def project_equipment_add_view(request, pk):
   project = _get_editable_project(request, pk)
   if not project:
@@ -198,9 +169,9 @@ def project_equipment_add_view(request, pk):
     equipment = form.save(commit=False)
     equipment.project = project
     equipment.save()
-    messages.success(request, 'Оборудование добавлено.')
+    messages.success(request, 'Товар добавлен.')
   else:
-    messages.error(request, 'Проверьте поля оборудования.')
+    messages.error(request, 'Проверьте поля товара.')
   return _redirect_project_detail(project)
 
 
@@ -217,6 +188,25 @@ def project_equipment_update_view(request, pk, equipment_pk):
     messages.success(request, 'Позиция обновлена.')
   else:
     messages.error(request, 'Не удалось обновить позицию.')
+  return _redirect_project_detail(project)
+
+
+@require_POST
+def project_equipment_quantity_view(request, pk, equipment_pk):
+  project = _get_editable_project(request, pk)
+  if not project:
+    return redirect('projects:detail', pk=pk)
+
+  equipment = get_object_or_404(ProjectEquipment, pk=equipment_pk, project=project)
+  try:
+    quantity = int(request.POST.get('quantity', ''))
+  except (TypeError, ValueError):
+    quantity = 0
+  if quantity < 1:
+    messages.error(request, 'Количество должно быть не меньше 1.')
+  else:
+    equipment.quantity = quantity
+    equipment.save(update_fields=['quantity'])
   return _redirect_project_detail(project)
 
 
@@ -307,6 +297,61 @@ def project_file_delete_view(request, pk, file_pk):
 
 
 @require_POST
+def project_task_add_view(request, pk):
+  project = _get_editable_project(request, pk)
+  if not project:
+    return redirect('projects:detail', pk=pk)
+  form = TaskForm(request.POST)
+  if form.is_valid():
+    task = form.save(commit=False)
+    task.project = project
+    task.created_by = request.user
+    task.save()
+    messages.success(request, 'Задача создана.')
+  else:
+    messages.error(request, 'Проверьте поля задачи.')
+  return _redirect_project_detail(project)
+
+
+def project_files_download_view(request, pk):
+  project = get_object_or_404(Project, pk=pk)
+  if not request.user.is_authenticated:
+    return redirect('projects:detail', pk=pk)
+
+  files = project.files.all()
+  archive = io.BytesIO()
+  used_names = set()
+  with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as bundle:
+    for project_file in files:
+      if not project_file.file:
+        continue
+      try:
+        with project_file.file.open('rb') as source:
+          filename = Path(project_file.display_name).name or f'file-{project_file.pk}'
+          original_name = filename
+          counter = 2
+          while filename in used_names:
+            suffix = Path(original_name).suffix
+            stem = Path(original_name).stem
+            filename = f'{stem} ({counter}){suffix}'
+            counter += 1
+          used_names.add(filename)
+          bundle.writestr(filename, source.read())
+      except (FileNotFoundError, OSError):
+        continue
+
+  archive.seek(0)
+  response = HttpResponse(archive.getvalue(), content_type='application/zip')
+  safe_name = re.sub(r'[\\/:*?"<>|\r\n]+', ' ', project.name).strip() or f'project-{project.pk}'
+  archive_name = f'Project_{safe_name}.zip'
+  response['Content-Disposition'] = (
+    f'attachment; filename="Project_{project.pk}.zip"; '
+    f"filename*=UTF-8''{quote(archive_name)}"
+  )
+  return response
+
+
+@require_POST
 def fetch_ozon_product_view(request):
   if not request.user.is_authenticated or not request.user.can_edit:
     return JsonResponse({'error': 'Недостаточно прав.'}, status=403)
@@ -336,5 +381,25 @@ def fetch_ozon_product_view(request):
   except Exception:
     return JsonResponse(
       {'error': 'Автозагрузка недоступна. Скопируйте текст с OZON и нажмите «Вставить текст».'},
+      status=502,
+    )
+
+
+@require_POST
+def fetch_marketplace_product_view(request):
+  if not request.user.is_authenticated or not request.user.can_edit:
+    return JsonResponse({'error': 'Недостаточно прав.'}, status=403)
+
+  url = request.POST.get('url', '').strip()
+  marketplace = request.POST.get('marketplace', '').strip().lower()
+  if not url:
+    return JsonResponse({'error': 'Вставьте ссылку на товар.'}, status=400)
+  try:
+    return JsonResponse(fetch_marketplace_product(url, marketplace))
+  except MarketplaceFetchError as exc:
+    return JsonResponse({'error': str(exc)}, status=400)
+  except Exception:
+    return JsonResponse(
+      {'error': 'Магазин не отдал данные. Заполните название и цену вручную.'},
       status=502,
     )
