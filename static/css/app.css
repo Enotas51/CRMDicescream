@@ -76,10 +76,18 @@ body {
 
 a {
   color: var(--ds-accent);
+  text-decoration: none;
 }
 
 a:hover {
-  color: #a5b4fc;
+  color: #f1d49a;
+  text-decoration: none;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--ds-primary-hover);
+  outline-offset: 2px;
+  border-radius: 0.2rem;
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -133,6 +141,21 @@ h1, h2, h3, h4, h5, h6,
   --bs-btn-border-color: rgba(16, 185, 129, 0.35);
   --bs-btn-hover-bg: rgba(16, 185, 129, 0.12);
   border-radius: 0.5rem;
+}
+
+.btn-success {
+  --bs-btn-color: #f5fff9;
+  --bs-btn-bg: #187a50;
+  --bs-btn-border-color: #187a50;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #219965;
+  --bs-btn-hover-border-color: #219965;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #115c3c;
+  --bs-btn-active-border-color: #115c3c;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(5, 48, 30, 0.28);
+  font-weight: 600;
 }
 
 .btn-outline-danger {
@@ -804,8 +827,8 @@ body.has-sidebar .app-main {
 }
 
 .table a:hover {
-  color: #a5b4fc;
-  text-decoration: underline;
+  color: #f1d49a;
+  text-decoration: none;
 }
 
 /* --- Lists --- */
@@ -1762,6 +1785,19 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
 [data-bs-theme="light"] .theme-toggle-switch { background: #e6dfd2; }
 [data-bs-theme="light"] .mobile-topbar { background: rgba(255, 253, 250, 0.95); }
 
+[data-bs-theme="light"] h1,
+[data-bs-theme="light"] h2,
+[data-bs-theme="light"] h3,
+[data-bs-theme="light"] h4,
+[data-bs-theme="light"] h5,
+[data-bs-theme="light"] h6,
+[data-bs-theme="light"] .h1,
+[data-bs-theme="light"] .h2,
+[data-bs-theme="light"] .h3,
+[data-bs-theme="light"] .h4,
+[data-bs-theme="light"] .h5,
+[data-bs-theme="light"] .h6 { color: #211e19; }
+
 /* Light mode contrast: values and status pills must never fade into the cards. */
 [data-bs-theme="light"] .stat-card .h4,
 [data-bs-theme="light"] .stat-card .h5,
@@ -1855,6 +1891,18 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
   --bs-btn-hover-bg: #d4aa4d;
   --bs-btn-hover-border-color: #d4aa4d;
   box-shadow: 0 3px 7px rgba(94, 66, 22, 0.14);
+}
+
+[data-bs-theme="light"] .btn-success {
+  --bs-btn-color: #fffdf7;
+  --bs-btn-bg: #167344;
+  --bs-btn-border-color: #167344;
+  --bs-btn-hover-color: #fffdf7;
+  --bs-btn-hover-bg: #105d36;
+  --bs-btn-hover-border-color: #105d36;
+  --bs-btn-active-bg: #0b492a;
+  --bs-btn-active-border-color: #0b492a;
+  box-shadow: 0 2px 6px rgba(17, 85, 49, 0.22);
 }
 
 /* Calendar needs its own light palette; it cannot inherit the night-board surfaces. */
