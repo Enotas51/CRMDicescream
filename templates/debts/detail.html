@@ -83,27 +83,6 @@
     </div>
   </div>
 
-  <div class="card mb-3">
-    <div class="card-body">
-      <p>{{ debt.description|linebreaks|default:"Без описания" }}</p>
-      <dl class="row mb-0">
-        <dt class="col-sm-3">Кредитор</dt>
-        <dd class="col-sm-9">
-          {{ debt.creditor_display }}
-          {% if debt.creditor_user %}
-          <span class="badge bg-light text-dark">@{{ debt.creditor_user.username }}</span>
-          {% elif show_link_creditor and can_edit %}
-          <span class="badge bg-warning text-dark">не привязан</span>
-          {% endif %}
-        </dd>
-        <dt class="col-sm-3">Проект</dt>
-        <dd class="col-sm-9">{% if debt.project %}<a href="{% url 'projects:detail' debt.project.pk %}">{{ debt.project.name }}</a>{% else %}—{% endif %}</dd>
-        <dt class="col-sm-3">Срок</dt>
-        <dd class="col-sm-9">{{ debt.due_date|date:"d.m.Y"|default:"—" }}</dd>
-      </dl>
-    </div>
-  </div>
-
   {% if can_edit %}
   {% for debtor in debtors %}
   {% if debtor.can_link_user %}
@@ -120,18 +99,6 @@
   {% endif %}
   {% endfor %}
 
-  {% if show_link_creditor %}
-  <div class="card mb-3">
-    <div class="card-header">Привязать кредитора к пользователю</div>
-    <div class="card-body">
-      <form method="post" action="{% url 'debts:link_creditor' debt.pk %}" class="row g-2 align-items-end">
-        {% csrf_token %}
-        <div class="col-md-6">{{ link_form.user }}</div>
-        <div class="col-md-auto"><button class="btn btn-primary">Привязать</button></div>
-      </form>
-    </div>
-  </div>
-  {% endif %}
   {% endif %}
 
   <div class="card">
