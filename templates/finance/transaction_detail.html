@@ -12,7 +12,7 @@
     {% endif %}
   </div>
   <div class="card card-body">
-    <p><strong>Сумма:</strong> {{ transaction.amount }} ₽ ({{ transaction.get_transaction_type_display }})</p>
+    <p><strong>Сумма:</strong> {{ transaction.amount|floatformat:0 }} ₽ ({{ transaction.get_transaction_type_display }})</p>
     <p><strong>Дата:</strong> {{ transaction.date|date:"d.m.Y" }}</p>
     {% if transaction.transaction_type == 'debt_repayment' %}
     <p><strong>Задолженность:</strong> {% if transaction.debt %}<a href="{% url 'debts:detail' transaction.debt.pk %}">{{ transaction.debt.title }}</a>{% else %}—{% endif %}</p>
@@ -20,9 +20,9 @@
     {% if transaction.skip_utilities %}
     <p><strong>Коммунальные:</strong> не удерживались</p>
     {% elif transaction.utilities_portion %}
-    <p><strong>На коммунальные:</strong> {{ transaction.utilities_portion }} ₽</p>
+    <p><strong>На коммунальные:</strong> {{ transaction.utilities_portion|floatformat:0 }} ₽</p>
     {% endif %}
-    {% if transaction.debt_reduction_amount %}<p><strong>На погашение долга:</strong> {{ transaction.debt_reduction_amount }} ₽</p>{% endif %}
+    {% if transaction.debt_reduction_amount %}<p><strong>На погашение долга:</strong> {{ transaction.debt_reduction_amount|floatformat:0 }} ₽</p>{% endif %}
     {% endif %}
     <p><strong>Проект:</strong> {{ transaction.project|default:"—" }}</p>
     <p>{{ transaction.notes|linebreaks|default:"" }}</p>

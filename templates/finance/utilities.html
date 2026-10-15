@@ -18,18 +18,12 @@
 
   {% include "finance/partials/period_filter.html" %}
 
-  <div class="alert alert-info small">
-    <i class="bi bi-info-circle"></i>
-    Отдельный счёт коммунальных. Пополняется извне, с основного баланса или автоматически при погашении задолженностей.
-    {% if can_edit %}Основной баланс: <strong>{{ main_balance|floatformat:2 }} ₽</strong>.{% endif %}
-  </div>
-
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
       <div class="card stat-card border-start border-4 border-success">
         <div class="card-body">
           <div class="small text-muted">Баланс коммунальных</div>
-          <div class="h4 mb-0 text-{% if balances.balance >= 0 %}success{% else %}danger{% endif %}">{{ balances.balance|floatformat:2 }} ₽</div>
+          <div class="h4 mb-0 text-{% if balances.balance >= 0 %}success{% else %}danger{% endif %}">{{ balances.balance|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
@@ -37,7 +31,7 @@
       <div class="card stat-card">
         <div class="card-body">
           <div class="small text-muted">Пополнено всего</div>
-          <div class="h5 mb-0">{{ balances.deposits|floatformat:2 }} ₽</div>
+          <div class="h5 mb-0">{{ balances.deposits|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
@@ -45,7 +39,7 @@
       <div class="card stat-card">
         <div class="card-body">
           <div class="small text-muted">Извне</div>
-          <div class="h5 mb-0">{{ balances.from_external|floatformat:2 }} ₽</div>
+          <div class="h5 mb-0">{{ balances.from_external|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
@@ -53,7 +47,7 @@
       <div class="card stat-card">
         <div class="card-body">
           <div class="small text-muted">С баланса</div>
-          <div class="h5 mb-0">{{ balances.from_balance|floatformat:2 }} ₽</div>
+          <div class="h5 mb-0">{{ balances.from_balance|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
@@ -61,7 +55,7 @@
       <div class="card stat-card">
         <div class="card-body">
           <div class="small text-muted">Из задолженностей</div>
-          <div class="h5 mb-0">{{ balances.from_debt|floatformat:2 }} ₽</div>
+          <div class="h5 mb-0">{{ balances.from_debt|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
@@ -88,7 +82,7 @@
             <td>{{ op.get_operation_type_display }}</td>
             <td>{{ op.source_display }}</td>
             <td class="text-end {% if op.operation_type == 'deposit' %}text-success{% else %}text-danger{% endif %}">
-              {% if op.operation_type == 'deposit' %}+{% else %}−{% endif %}{{ op.amount }} ₽
+              {% if op.operation_type == 'deposit' %}+{% else %}−{% endif %}{{ op.amount|floatformat:0 }} ₽
             </td>
           </tr>
           {% empty %}

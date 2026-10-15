@@ -14,7 +14,7 @@
   <div class="card card-body">
     <p><strong>Операция:</strong> {{ transfer.get_direction_display }}</p>
     <p><strong>Источник:</strong> {{ transfer.source_display }}</p>
-    <p><strong>Сумма:</strong> {{ transfer.amount }} ₽</p>
+    <p><strong>Сумма:</strong> {{ transfer.amount|floatformat:0 }} ₽</p>
     <p><strong>Дата:</strong> {{ transfer.date|date:"d.m.Y" }}</p>
     <p><strong>Проект:</strong> {{ transfer.project|default:"—" }}</p>
     <p>{{ transfer.notes|linebreaks|default:"" }}</p>

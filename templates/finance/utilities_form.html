@@ -7,13 +7,13 @@
     <div class="col-sm-6">
       <div class="card card-body py-2">
         <small class="text-muted">На коммунальных</small>
-        <div class="fw-semibold text-{% if balances.balance >= 0 %}success{% else %}danger{% endif %}">{{ balances.balance|floatformat:2 }} ₽</div>
+        <div class="fw-semibold text-{% if balances.balance >= 0 %}success{% else %}danger{% endif %}">{{ balances.balance|floatformat:0 }} ₽</div>
       </div>
     </div>
     <div class="col-sm-6">
       <div class="card card-body py-2">
         <small class="text-muted">Основной баланс</small>
-        <div class="fw-semibold {% if main_balance >= 0 %}text-primary{% else %}text-danger{% endif %}">{{ main_balance|floatformat:2 }} ₽</div>
+        <div class="fw-semibold {% if main_balance >= 0 %}text-primary{% else %}text-danger{% endif %}">{{ main_balance|floatformat:0 }} ₽</div>
       </div>
     </div>
   </div>

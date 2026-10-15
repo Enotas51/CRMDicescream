@@ -17,7 +17,7 @@
           <td><a href="{{ t.url }}">{{ t.title }}</a></td>
           <td>{{ t.account }}</td>
           <td>{{ t.operation }}</td>
-          <td class="text-end {{ t.amount_class }}">{{ t.sign }}{{ t.amount }} ₽</td>
+          <td class="text-end {{ t.amount_class }}">{{ t.sign }}{{ t.amount|floatformat:0 }} ₽</td>
         </tr>
         {% empty %}
         <tr><td colspan="5" class="text-muted">За выбранный период операций нет</td></tr>

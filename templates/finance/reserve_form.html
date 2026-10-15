@@ -5,8 +5,8 @@
   <h1 class="h4 mb-3">{% if object %}Редактирование операции{% else %}Операция с резервом{% endif %}</h1>
 
   <div class="row g-2 mb-3">
-    <div class="col-6"><div class="card card-body py-2"><small class="text-muted">Баланс</small><div class="fw-semibold">{{ balances.main_balance|floatformat:2 }} ₽</div></div></div>
-    <div class="col-6"><div class="card card-body py-2"><small class="text-muted">Резерв</small><div class="fw-semibold text-info">{{ balances.reserve_balance|floatformat:2 }} ₽</div></div></div>
+    <div class="col-6"><div class="card card-body py-2"><small class="text-muted">Баланс</small><div class="fw-semibold">{{ balances.main_balance|floatformat:0 }} ₽</div></div></div>
+    <div class="col-6"><div class="card card-body py-2"><small class="text-muted">Резерв</small><div class="fw-semibold text-info">{{ balances.reserve_balance|floatformat:0 }} ₽</div></div></div>
   </div>
 
   <form method="post" class="card card-body" id="reserveForm">
