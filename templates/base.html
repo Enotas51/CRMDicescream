@@ -48,7 +48,7 @@
       <a href="{% url 'projects:list' %}" class="sidebar-link{% if '/projects/' in request.path %} active{% endif %}">
         <i class="bi bi-folder"></i><span>Проекты</span>
       </a>
-      <a href="{% url 'tasks:kanban' %}" class="sidebar-link{% if '/tasks/' in request.path %} active{% endif %}">
+      <a href="{% url 'tasks:home' %}" class="sidebar-link{% if '/tasks/' in request.path %} active{% endif %}">
         <i class="bi bi-kanban"></i><span>Задачи</span>
       </a>
       <a href="{% url 'calendar_app:calendar' %}" class="sidebar-link{% if '/calendar/' in request.path %} active{% endif %}">

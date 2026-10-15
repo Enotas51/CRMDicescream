@@ -3,11 +3,23 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from accounts.permissions import ApprovedUserMixin, CanEditMixin, user_can_edit_object
 from .forms import TaskForm, TaskStatusForm
 from .models import Task, TaskStatus
+
+
+class TaskHomeView(ApprovedUserMixin, View):
+  """Open the task view that is comfortable for the current device."""
+
+  mobile_user_agent_markers = ('Android', 'iPhone', 'iPod', 'Windows Phone', 'Mobile')
+
+  def get(self, request, *args, **kwargs):
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    destination = 'tasks:list' if any(marker in user_agent for marker in self.mobile_user_agent_markers) else 'tasks:kanban'
+    return redirect(destination)
 
 
 class TaskListView(ApprovedUserMixin, ListView):
