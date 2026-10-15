@@ -50,12 +50,12 @@
   <div class="card mb-3">
     <div class="card-header">Должники</div>
     <div class="table-responsive">
-      <table class="table mb-0">
+      <table class="table mb-0 debt-debtors-table">
         <thead>
           <tr>
             <th>Должник</th>
-            <th class="text-end">Сумма</th>
-            <th class="text-end">Погашено</th>
+            <th class="text-end debt-debtor-col-hide-mobile">Сумма</th>
+            <th class="text-end debt-debtor-col-hide-mobile">Погашено</th>
             <th class="text-end">Остаток</th>
             <th></th>
           </tr>
@@ -65,15 +65,10 @@
           <tr>
             <td>
               {{ debtor.display_name }}
-              {% if debtor.debtor_user %}
-              <span class="badge bg-light text-dark">@{{ debtor.debtor_user.username }}</span>
-              {% elif debtor.can_link_user %}
-              <span class="badge bg-warning text-dark">не привязан</span>
-              {% endif %}
             </td>
-            <td class="text-end">{{ debtor.amount }} ₽</td>
-            <td class="text-end text-success">{{ debtor.get_repaid_amount }} ₽</td>
-            <td class="text-end fw-semibold">{{ debtor.remaining_amount }} ₽</td>
+            <td class="text-end debt-debtor-col-hide-mobile">{{ debtor.amount|floatformat:0 }} ₽</td>
+            <td class="text-end text-success debt-debtor-col-hide-mobile">{{ debtor.get_repaid_amount|floatformat:0 }} ₽</td>
+            <td class="text-end fw-semibold">{{ debtor.remaining_amount|floatformat:0 }} ₽</td>
             <td class="text-end">
               {% if can_edit and debtor.remaining_amount > 0 and debt.status != 'closed' and debt.status != 'cancelled' %}
               <a href="{% url 'finance:transaction_create' %}?debt={{ debt.pk }}&debtor={{ debtor.pk }}&type=debt_repayment" class="btn btn-sm btn-success">Погасить</a>

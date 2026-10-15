@@ -265,6 +265,17 @@ h1, h2, h3, h4, h5, h6,
   .debt-list-table th:first-child { width: 62%; }
   .debt-list-table td:first-child a { display: block; overflow-wrap: anywhere; }
   .debt-list-table td:nth-child(5) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .debt-debtors-table { width: 100%; table-layout: fixed; }
+  .debt-debtors-table .debt-debtor-col-hide-mobile { display: none; }
+  .debt-debtors-table th,
+  .debt-debtors-table td { padding: 0.7rem 0.35rem; }
+  .debt-debtors-table th:nth-child(1) { width: 42%; }
+  .debt-debtors-table th:nth-child(4) { width: 27%; }
+  .debt-debtors-table th:nth-child(5) { width: 31%; }
+  .debt-debtors-table td:first-child { overflow-wrap: anywhere; }
+  .debt-debtors-table td:nth-child(4) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .debt-debtors-table td:nth-child(5) { white-space: nowrap; }
+  .debt-debtors-table td:nth-child(5) .btn { padding: 0.35rem 0.45rem; font-size: 0.74rem; }
   .debt-detail-actions {
     width: 100%;
     padding: 0.35rem;
