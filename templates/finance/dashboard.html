@@ -6,8 +6,8 @@
     <h1 class="h3 mb-0">Финансы</h1>
     <div class="d-flex gap-2 flex-wrap finance-action-bar">
       {% if can_edit %}<a href="{% url 'finance:transaction_create' %}" class="btn btn-primary btn-sm finance-action-primary">+ Транзакция</a>{% endif %}
-      <a href="{% url 'finance:reserve' %}" class="btn btn-outline-info btn-sm"><i class="bi bi-safe"></i> Резерв</a>
-      <a href="{% url 'finance:utilities' %}" class="btn btn-outline-success btn-sm"><i class="bi bi-lightning"></i> Коммунальные</a>
+      <a href="{% url 'finance:reserve' %}" class="btn btn-outline-info btn-sm"><i class="bi bi-safe me-1"></i>Резерв</a>
+      <a href="{% url 'finance:utilities' %}" class="btn btn-outline-success btn-sm"><i class="bi bi-lightning me-1"></i>Коммунальные</a>
       <a href="{% url 'finance:transactions' %}" class="btn btn-outline-secondary btn-sm">Все транзакции</a>
     </div>
   </div>
@@ -18,7 +18,7 @@
     <div class="col-6 col-md-4 d-flex"><div class="card stat-card w-100"><div class="card-body"><div class="small text-muted">Коммунальные</div><div class="h4 text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}"><a href="{% url 'finance:utilities' %}" class="text-decoration-none text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}">{{ utilities_balance|floatformat:0 }} ₽</a></div></div></div></div>
     <div class="col-6 col-md-4 d-flex"><div class="card stat-card w-100"><div class="card-body"><div class="small text-muted">Доходы</div><div class="h4 text-success">{{ total_income|floatformat:0 }} ₽</div></div></div></div>
     <div class="col-6 col-md-4 d-flex"><div class="card stat-card w-100"><div class="card-body"><div class="small text-muted">Расходы</div><div class="h4 text-danger">{{ total_expense|floatformat:0 }} ₽</div></div></div></div>
-    <div class="col-6 col-md-4 d-flex"><div class="card stat-card w-100"><div class="card-body"><div class="small text-muted">{{ period_label }} (доходы − расходы)</div><div class="h5 mb-0">{{ month_balance|floatformat:0 }} ₽</div><div class="small text-muted mt-1">Доходы: {{ month_income|floatformat:0 }} · Расходы: {{ month_expense|floatformat:0 }}</div></div></div></div>
+    <div class="col-6 col-md-4 d-flex"><div class="card stat-card w-100"><div class="card-body"><div class="small text-muted">Прибыль</div><div class="h5 mb-0 text-{% if month_balance >= 0 %}success{% else %}danger{% endif %}">{{ month_balance|floatformat:0 }} ₽</div></div></div></div>
   </div>
   <div class="card">
     <div class="card-header">Транзакции — {{ period_label }}</div>

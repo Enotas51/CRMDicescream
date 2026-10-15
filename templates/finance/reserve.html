@@ -18,33 +18,33 @@
 
   {% include "finance/partials/period_filter.html" %}
 
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="card stat-card border-start border-4 border-primary">
+  <div class="row g-3 mb-4 finance-stats-row">
+    <div class="col-6 col-md-3 d-flex">
+      <div class="card stat-card w-100 h-100 border-start border-4 border-primary">
         <div class="card-body">
           <div class="small text-muted">Основной баланс</div>
           <div class="h4 mb-0 text-{% if balances.main_balance >= 0 %}success{% else %}danger{% endif %}">{{ balances.main_balance|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card border-start border-4 border-info">
+    <div class="col-6 col-md-3 d-flex">
+      <div class="card stat-card w-100 h-100 border-start border-4 border-info">
         <div class="card-body">
           <div class="small text-muted">Резерв</div>
           <div class="h4 mb-0 text-info">{{ balances.reserve_balance|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
+    <div class="col-6 col-md-3 d-flex">
+      <div class="card stat-card w-100 h-100">
         <div class="card-body">
           <div class="small text-muted">В резерв с баланса</div>
           <div class="h5 mb-0">{{ balances.to_reserve_from_balance|floatformat:0 }} ₽</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
+    <div class="col-6 col-md-3 d-flex">
+      <div class="card stat-card w-100 h-100">
         <div class="card-body">
           <div class="small text-muted">В резерв извне</div>
           <div class="h5 mb-0">{{ balances.to_reserve_external|floatformat:0 }} ₽</div>
