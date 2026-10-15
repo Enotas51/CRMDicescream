@@ -900,6 +900,10 @@ body.has-sidebar .app-main {
     min-height: 100dvh;
   }
 
+  body.has-sidebar {
+    height: 100dvh;
+  }
+
   body.has-sidebar .app-main {
     margin-left: 0;
   }
