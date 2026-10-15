@@ -230,6 +230,18 @@ h1, h2, h3, h4, h5, h6,
 
 .debt-create-label-short { display: none; }
 .debt-detail-delete i { margin-right: 0.2rem; }
+.project-create-label-short { display: none; }
+.project-create-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.55rem;
+  box-shadow: 0 5px 14px rgba(184, 138, 59, 0.16);
+  font-size: 0.86rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.project-create-button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(184, 138, 59, 0.25); }
 @media (max-width: 575.98px) {
   .debt-list-header { flex-wrap: nowrap !important; gap: 0.65rem !important; }
   .debt-list-header .h3 { min-width: 0; font-size: 1.3rem; }
@@ -242,6 +254,11 @@ h1, h2, h3, h4, h5, h6,
   }
   .debt-create-label-full { display: none; }
   .debt-create-label-short { display: inline; }
+  .project-list-header { flex-wrap: nowrap !important; gap: 0.65rem !important; }
+  .project-list-header .h3 { min-width: 0; font-size: 1.3rem; }
+  .project-create-button { flex: 0 0 auto; padding: 0.42rem 0.6rem; font-size: 0.78rem; white-space: nowrap; }
+  .project-create-label-full { display: none; }
+  .project-create-label-short { display: inline; }
   .debt-list-table .debt-list-col-hide-mobile { display: none; }
   .debt-list-table th,
   .debt-list-table td { padding: 0.72rem 0.45rem; }

@@ -47,14 +47,7 @@ class ProjectListView(ApprovedUserMixin, ListView):
   paginate_by = 20
 
   def get_queryset(self):
-    qs = Project.objects.prefetch_related('members', 'tasks', 'equipment')
-    status = self.request.GET.get('status')
-    if status:
-      qs = qs.filter(status=status)
-    search = self.request.GET.get('q')
-    if search:
-      qs = qs.filter(name__icontains=search)
-    return qs
+    return Project.objects.prefetch_related('members', 'tasks', 'equipment')
 
 
 class ProjectDetailView(ApprovedUserMixin, DetailView):
