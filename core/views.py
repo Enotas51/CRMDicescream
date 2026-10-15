@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db.models import Sum
 from django.shortcuts import render
 from django.utils import timezone
 from datetime import timedelta
@@ -60,6 +61,16 @@ class DashboardView(ApprovedUserMixin, View):
     month_start = today.replace(day=1)
     month_end = today
     transactions = Transaction.objects.all()
+    month_income = transactions.filter(
+      date__gte=month_start,
+      date__lte=month_end,
+      transaction_type=TransactionType.INCOME,
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    month_expense = transactions.filter(
+      date__gte=month_start,
+      date__lte=month_end,
+      transaction_type=TransactionType.EXPENSE,
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
     reserve_transfers = ReserveTransfer.objects.all()
     balance = sum((item.signed_amount for item in transactions if item.date < month_start), Decimal('0'))
     balance -= sum((item.amount for item in reserve_transfers if item.date < month_start and item.direction == ReserveDirection.TO_RESERVE and item.source == 'balance'), Decimal('0'))
@@ -99,6 +110,7 @@ class DashboardView(ApprovedUserMixin, View):
       'balance': balances['main_balance'],
       'reserve_balance': balances['reserve_balance'],
       'utilities_balance': compute_utilities_balance()['balance'],
+      'month_profit': month_income - month_expense,
       'recent_movements': recent_movements[:5],
       'pending_users_count': pending_users_count,
       'can_edit': request.user.can_edit,

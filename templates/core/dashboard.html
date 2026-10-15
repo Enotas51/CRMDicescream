@@ -11,27 +11,35 @@
   {% endif %}
 
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-4">
-      <a href="{% url 'finance:transactions' %}" class="card stat-card stat-card-link">
+    <div class="col-6 col-md-4 d-flex">
+      <a href="{% url 'finance:transactions' %}" class="card stat-card stat-card-link w-100 h-100">
         <div class="card-body">
           <div class="text-muted small">Баланс</div>
           <div class="h4 mb-0 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">{{ balance|floatformat:0 }} ₽</div>
         </div>
       </a>
     </div>
-    <div class="col-6 col-md-4">
-      <a href="{% url 'finance:reserve' %}" class="card stat-card stat-card-link">
+    <div class="col-6 col-md-4 d-flex">
+      <a href="{% url 'finance:reserve' %}" class="card stat-card stat-card-link w-100 h-100">
         <div class="card-body">
           <div class="text-muted small">Резерв</div>
           <div class="h4 mb-0 text-info">{{ reserve_balance|floatformat:0 }} ₽</div>
         </div>
       </a>
     </div>
-    <div class="col-6 col-md-4">
-      <a href="{% url 'finance:utilities' %}" class="card stat-card stat-card-link">
+    <div class="col-6 col-md-4 d-flex">
+      <a href="{% url 'finance:utilities' %}" class="card stat-card stat-card-link w-100 h-100">
         <div class="card-body">
           <div class="text-muted small">Коммунальные</div>
           <div class="h4 mb-0 text-{% if utilities_balance >= 0 %}success{% else %}danger{% endif %}">{{ utilities_balance|floatformat:0 }} ₽</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-4 d-flex d-md-none">
+      <a href="{% url 'finance:dashboard' %}" class="card stat-card stat-card-link w-100 h-100">
+        <div class="card-body">
+          <div class="text-muted small">Прибыль за месяц</div>
+          <div class="h4 mb-0 {% if month_profit >= 0 %}text-success{% else %}text-danger{% endif %}">{{ month_profit|floatformat:0 }} ₽</div>
         </div>
       </a>
     </div>
