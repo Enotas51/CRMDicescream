@@ -852,6 +852,20 @@ body.has-sidebar .app-main {
   color: #fff;
 }
 
+.mobile-topbar-date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+  color: var(--ds-accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-transform: capitalize;
+}
+.mobile-topbar-date small { color: var(--ds-text-dim); font-size: 0.64rem; font-weight: 600; }
+
 .mobile-topbar-logo {
   width: 28px;
   height: 28px;

@@ -2,11 +2,6 @@
 {% block title %}Главная — {{ site_name }}{% endblock %}
 {% block content %}
 <div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Добро пожаловать, {{ user.first_name|default:user.username }}!</h1>
-    <span class="text-muted">{{ today|date:"d E Y" }}</span>
-  </div>
-
   {% if user.is_admin and pending_users_count %}
   <div class="alert alert-warning">
     <i class="bi bi-person-exclamation"></i>
