@@ -2338,6 +2338,7 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
 .mobile-day-dots { display: none; }
 
 .calendar-upcoming-mobile { display: none; }
+.calendar-classic-wrap { touch-action: pan-y; }
 
 .calendar-day-modal { border-color: var(--ds-border); background: var(--ds-bg-elevated); }
 .calendar-day-modal .modal-header { border-bottom-color: var(--ds-border); padding: 1rem 1.1rem 0.85rem; }
@@ -2421,6 +2422,17 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
 }
 
 @media (max-width: 575.98px) {
+  .calendar-toolbar { align-items: stretch !important; gap: 0.65rem !important; }
+  .calendar-toolbar-title { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 0.75rem; }
+  .calendar-toolbar-title h1 { min-width: 0; }
+  .calendar-mobile-create { flex: 0 0 auto; white-space: nowrap; }
+  .calendar-toolbar-actions { width: 100%; }
+  .calendar-month-switcher { display: flex; width: 100%; }
+  .calendar-month-switcher .btn { display: inline-flex; min-height: 2.5rem; align-items: center; justify-content: center; }
+  .calendar-month-switcher .btn:first-child,
+  .calendar-month-switcher .btn:last-child { flex: 0 0 3.25rem; }
+  .calendar-month-switcher .btn:nth-child(2) { flex: 1; }
+
   .calendar-upcoming-mobile {
     display: block;
     margin-top: 0.8rem;

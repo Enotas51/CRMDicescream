@@ -159,7 +159,7 @@ class EventCreateView(CanEditMixin, CreateView):
       self.object.recurrence_key = recurrence_key
       self.object.recurrence_until = weekly_until
       self.object.save(update_fields=['recurrence_key', 'recurrence_until'])
-      copies = create_event_copies(
+      create_event_copies(
         self.object,
         weekly_dates(timezone.localtime(self.object.start).date(), weekly_until),
         self.request.user,
@@ -167,20 +167,11 @@ class EventCreateView(CanEditMixin, CreateView):
         recurrence_until=weekly_until,
       )
     elif recurrence_type == 'dates':
-      copies = create_event_copies(
+      create_event_copies(
         self.object,
         parse_copy_dates(self.request.POST.getlist('copy_date')),
         self.request.user,
       )
-    else:
-      copies = []
-    if copies:
-      messages.success(
-        self.request,
-        f'Событие создано и скопировано на {len(copies)} дат(ы).',
-      )
-    else:
-      messages.success(self.request, 'Событие создано.')
     return response
 
   def get_success_url(self):
@@ -201,18 +192,11 @@ class EventUpdateView(CanEditMixin, UpdateView):
 
   def form_valid(self, form):
     response = super().form_valid(form)
-    copies = create_event_copies(
+    create_event_copies(
       self.object,
       parse_copy_dates(self.request.POST.getlist('copy_date')),
       self.request.user,
     )
-    if copies:
-      messages.success(
-        self.request,
-        f'Событие обновлено и скопировано на {len(copies)} дат(ы).',
-      )
-    else:
-      messages.success(self.request, 'Событие обновлено.')
     return response
 
   def get_success_url(self):

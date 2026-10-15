@@ -3,11 +3,14 @@
 {% block content %}
 <div class="container-fluid calendar-page">
   <div class="calendar-toolbar d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <div>
+    <div class="calendar-toolbar-title">
       <h1 class="h3 mb-0">{{ month_name }} {{ year }}</h1>
+      {% if can_edit %}
+      <a href="{% url 'calendar_app:create' %}" class="btn btn-primary btn-sm calendar-mobile-create d-sm-none">+ Событие</a>
+      {% endif %}
     </div>
-    <div class="d-flex gap-2 flex-wrap align-items-center">
-      <div class="btn-group">
+    <div class="d-flex gap-2 flex-wrap align-items-center calendar-toolbar-actions">
+      <div class="btn-group calendar-month-switcher">
         <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-secondary btn-sm" title="Предыдущий месяц">
           <i class="bi bi-chevron-left"></i>
         </a>
@@ -17,7 +20,7 @@
         </a>
       </div>
       {% if can_edit %}
-      <a href="{% url 'calendar_app:create' %}" class="btn btn-primary btn-sm">+ Событие</a>
+      <a href="{% url 'calendar_app:create' %}" class="btn btn-primary btn-sm d-none d-sm-inline-flex">+ Событие</a>
       {% endif %}
     </div>
   </div>
@@ -28,7 +31,7 @@
     <span><span class="calendar-legend-dot calendar-legend-holiday"></span> Праздник РФ</span>
   </div>
 
-  <div class="calendar-classic-wrap">
+  <div class="calendar-classic-wrap" data-calendar-swipe data-prev-month-url="?year={{ prev_year }}&month={{ prev_month }}" data-next-month-url="?year={{ next_year }}&month={{ next_month }}">
     <table class="calendar-classic table table-bordered mb-0">
       <thead>
         <tr>
@@ -237,6 +240,24 @@ document.addEventListener('DOMContentLoaded', function () {
       dayModal.show();
     });
   });
+
+  var calendarSwipe = document.querySelector('[data-calendar-swipe]');
+  if (calendarSwipe) {
+    var swipeStartX = 0;
+    var swipeStartY = 0;
+    calendarSwipe.addEventListener('touchstart', function (event) {
+      var touch = event.changedTouches[0];
+      swipeStartX = touch.clientX;
+      swipeStartY = touch.clientY;
+    }, { passive: true });
+    calendarSwipe.addEventListener('touchend', function (event) {
+      var touch = event.changedTouches[0];
+      var deltaX = touch.clientX - swipeStartX;
+      var deltaY = touch.clientY - swipeStartY;
+      if (Math.abs(deltaX) < 55 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+      window.location.href = deltaX > 0 ? calendarSwipe.dataset.prevMonthUrl : calendarSwipe.dataset.nextMonthUrl;
+    }, { passive: true });
+  }
 
   function showEventDetail(eventItem) {
     var day = eventItem.closest('[data-calendar-day]');
