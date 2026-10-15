@@ -229,6 +229,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .debt-create-label-short { display: none; }
+.debt-detail-delete i { margin-right: 0.2rem; }
 @media (max-width: 575.98px) {
   .debt-list-header { flex-wrap: nowrap !important; gap: 0.65rem !important; }
   .debt-list-header .h3 { min-width: 0; font-size: 1.3rem; }
@@ -247,6 +248,30 @@ h1, h2, h3, h4, h5, h6,
   .debt-list-table th:first-child { width: 62%; }
   .debt-list-table td:first-child a { display: block; overflow-wrap: anywhere; }
   .debt-list-table td:nth-child(5) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .debt-detail-actions {
+    width: 100%;
+    padding: 0.35rem;
+    border: 1px solid var(--ds-border);
+    border-radius: 0.6rem;
+    background: var(--ds-bg-elevated);
+  }
+  .debt-detail-actions .debt-detail-edit {
+    flex: 1 1 auto;
+    min-height: 2.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .debt-detail-actions .debt-detail-delete {
+    width: 2.2rem;
+    min-height: 2.2rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .debt-detail-delete i { margin: 0; }
+  .debt-detail-delete span { display: none; }
 }
 
 .dashboard-modal-icon-action {

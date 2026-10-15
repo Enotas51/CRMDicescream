@@ -9,12 +9,12 @@
         {{ debt.get_status_display }}
       </span>
     </div>
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="d-flex gap-2 flex-wrap debt-detail-actions">
       {% if can_edit and debt.status != 'closed' and debt.status != 'cancelled' %}
-      <a href="{% url 'debts:edit' debt.pk %}" class="btn btn-outline-primary btn-sm">Редактировать</a>
+      <a href="{% url 'debts:edit' debt.pk %}" class="btn btn-outline-primary btn-sm debt-detail-edit"><i class="bi bi-pencil"></i> Редактировать</a>
       {% endif %}
       {% if user.is_admin %}
-      <a href="{% url 'debts:delete' debt.pk %}" class="btn btn-outline-danger btn-sm">Удалить</a>
+      <a href="{% url 'debts:delete' debt.pk %}" class="btn btn-outline-danger btn-sm debt-detail-delete" aria-label="Удалить"><i class="bi bi-trash"></i><span>Удалить</span></a>
       {% endif %}
     </div>
   </div>
