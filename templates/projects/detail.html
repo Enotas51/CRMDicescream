@@ -10,15 +10,19 @@
       <span class="badge bg-secondary">{{ project.get_status_display }}</span>
     </div>
     <div class="d-flex flex-wrap project-header-actions">
-      {% if can_edit or user.is_admin %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#equipmentModal">+ Товар</button>{% endif %}
-      {% if can_edit %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#fileModal">+ Файл</button>{% endif %}
-      {% if can_edit %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#taskModal">+ Задача</button>{% endif %}
-      {% if can_edit or user.is_admin %}
-      <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-secondary btn-sm project-header-icon" title="Редактировать" aria-label="Редактировать"><i class="bi bi-pencil"></i></a>
-      {% endif %}
-      {% if user.is_admin %}
-      <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger btn-sm project-header-icon" title="Удалить" aria-label="Удалить"><i class="bi bi-trash"></i></a>
-      {% endif %}
+      <div class="project-header-primary-actions">
+        {% if can_edit or user.is_admin %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#equipmentModal"><i class="bi bi-box-seam"></i> Товар</button>{% endif %}
+        {% if can_edit %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#fileModal"><i class="bi bi-paperclip"></i> Файл</button>{% endif %}
+        {% if can_edit %}<button type="button" class="btn btn-outline-primary btn-sm project-header-action" data-bs-toggle="modal" data-bs-target="#taskModal"><i class="bi bi-check2-square"></i> Задача</button>{% endif %}
+      </div>
+      <div class="project-header-management-actions">
+        {% if can_edit or user.is_admin %}
+        <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-secondary btn-sm project-header-icon" title="Редактировать" aria-label="Редактировать"><i class="bi bi-pencil"></i></a>
+        {% endif %}
+        {% if user.is_admin %}
+        <a href="{% url 'projects:delete' project.pk %}" class="btn btn-outline-danger btn-sm project-header-icon" title="Удалить" aria-label="Удалить"><i class="bi bi-trash"></i></a>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -172,8 +176,10 @@
         <div class="project-files-grid">
           {% for f in project_files %}
           <article class="project-file-card">
-            <a href="{{ f.file.url }}" target="_blank" rel="noopener" class="project-file-preview" title="Открыть файл">
-              {% with filename=f.file.name|lower %}
+            {% with filename=f.file.name|lower %}
+            <button type="button" class="project-file-preview project-file-preview-trigger" title="Открыть файл: {{ f.display_name }}"
+              data-file-name="{{ f.display_name }}" data-file-url="{{ f.file.url }}"
+              data-preview-type="{% if '.jpg' in filename or '.jpeg' in filename or '.png' in filename or '.gif' in filename or '.webp' in filename %}image{% elif '.pdf' in filename %}pdf{% else %}file{% endif %}">
               {% if ".jpg" in filename or ".jpeg" in filename or ".png" in filename or ".gif" in filename or ".webp" in filename %}
               <img src="{{ f.file.url }}" alt="{{ f.display_name }}" loading="lazy">
               {% else %}
@@ -182,8 +188,8 @@
                 <strong>{{ f.file_extension }}</strong>
               </span>
               {% endif %}
-              {% endwith %}
-            </a>
+            </button>
+            {% endwith %}
             <div class="project-file-name" title="{{ f.display_name }}">{{ f.display_name }}</div>
             <div class="project-file-date">{{ f.created_at|date:"d.m.Y H:i" }}</div>
             {% if can_edit %}
@@ -197,6 +203,29 @@
         </div>
       </div>
       {% endif %}
+
+      <div class="modal fade" id="projectFilePreviewModal" tabindex="-1" aria-labelledby="projectFilePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered project-file-modal-dialog">
+          <div class="modal-content project-file-modal">
+            <div class="modal-header">
+              <h2 class="modal-title fs-5 text-truncate" id="projectFilePreviewModalLabel">Файл</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body project-file-modal-body">
+              <img data-project-file-image class="project-file-modal-image d-none" alt="">
+              <iframe data-project-file-pdf class="project-file-modal-pdf d-none" title="Предпросмотр PDF"></iframe>
+              <div data-project-file-generic class="project-file-modal-generic d-none">
+                <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                <p>Для этого формата предпросмотр недоступен.</p>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <a data-project-file-download class="btn btn-primary" download><i class="bi bi-download"></i> Скачать</a>
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {% if tasks %}
       <div class="card">
@@ -392,6 +421,49 @@ document.addEventListener('DOMContentLoaded', function () {
       if (remove) remove.href = card.dataset.deleteUrl;
       bootstrap.Modal.getOrCreateInstance(modal).show();
     });
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+  var modal = document.getElementById('projectFilePreviewModal');
+  if (!modal) return;
+  var title = document.getElementById('projectFilePreviewModalLabel');
+  var image = modal.querySelector('[data-project-file-image]');
+  var pdf = modal.querySelector('[data-project-file-pdf]');
+  var generic = modal.querySelector('[data-project-file-generic]');
+  var download = modal.querySelector('[data-project-file-download]');
+
+  document.querySelectorAll('.project-file-preview-trigger').forEach(function (trigger) {
+    trigger.addEventListener('click', function () {
+      var fileName = trigger.dataset.fileName;
+      var fileUrl = trigger.dataset.fileUrl;
+      var previewType = trigger.dataset.previewType;
+      title.textContent = fileName;
+      download.href = fileUrl;
+      download.download = fileName;
+      image.classList.add('d-none');
+      pdf.classList.add('d-none');
+      generic.classList.add('d-none');
+      image.removeAttribute('src');
+      pdf.removeAttribute('src');
+
+      if (previewType === 'image') {
+        image.src = fileUrl;
+        image.alt = fileName;
+        image.classList.remove('d-none');
+      } else if (previewType === 'pdf') {
+        pdf.src = fileUrl;
+        pdf.classList.remove('d-none');
+      } else {
+        generic.classList.remove('d-none');
+      }
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+  });
+
+  modal.addEventListener('hidden.bs.modal', function () {
+    pdf.removeAttribute('src');
+    image.removeAttribute('src');
   });
 });
 </script>

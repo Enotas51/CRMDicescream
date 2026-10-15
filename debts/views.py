@@ -15,14 +15,7 @@ class DebtListView(ApprovedUserMixin, ListView):
   paginate_by = 30
 
   def get_queryset(self):
-    qs = Debt.objects.select_related('creditor_user', 'project').prefetch_related('debtors')
-    status = self.request.GET.get('status')
-    if status:
-      qs = qs.filter(status=status)
-    search = self.request.GET.get('q')
-    if search:
-      qs = qs.filter(title__icontains=search)
-    return qs
+    return Debt.objects.select_related('creditor_user', 'project').prefetch_related('debtors')
 
   def get_context_data(self, **kwargs):
     ctx = super().get_context_data(**kwargs)

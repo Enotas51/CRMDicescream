@@ -1,6 +1,6 @@
 {% load static %}
 <form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3 finance-period-filter">
-  <div>
+  <div class="finance-period-select-wrap">
     <label class="form-label small text-muted mb-1">Период</label>
     <select name="month" class="form-select form-select-sm" onchange="this.form.submit()">
       {% for choice in month_choices %}
@@ -14,7 +14,7 @@
   <input type="hidden" name="year" id="finance-filter-year" value="{{ filter_year|default:'' }}">
   {% if request.GET.type %}<input type="hidden" name="type" value="{{ request.GET.type }}">{% endif %}
   {% if request.GET.project %}<input type="hidden" name="project" value="{{ request.GET.project }}">{% endif %}
-  <div class="d-flex gap-2 flex-wrap">
+  <div class="d-flex gap-2 flex-wrap finance-period-actions">
     {% if not period_all_time %}
     <a href="?all=1{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.project %}&project={{ request.GET.project }}{% endif %}"
        class="btn btn-outline-secondary btn-sm">Всё время</a>

@@ -132,5 +132,4 @@ def task_update_status(request, pk):
       form.save()
       if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'ok': True, 'status': task.status})
-      messages.success(request, 'Статус обновлён.')
   return redirect('tasks:kanban')

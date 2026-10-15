@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
 from accounts.permissions import ApprovedUserMixin, CanEditMixin, user_can_edit_object
 from debts.models import Debt, DebtStatus
@@ -22,6 +22,7 @@ from .models import (
   Transaction,
   TransactionType,
   UtilitiesOperation,
+  UtilitiesOperationType,
   UtilitiesSource,
 )
 from .periods import (
@@ -102,30 +103,73 @@ class FinanceDashboardView(ApprovedUserMixin, ListView):
     return ctx
 
 
-class TransactionListView(ApprovedUserMixin, ListView):
-  model = Transaction
+class TransactionListView(ApprovedUserMixin, TemplateView):
   template_name = 'finance/transaction_list.html'
-  context_object_name = 'transactions'
-  paginate_by = 30
-
-  def get_queryset(self):
-    qs = Transaction.objects.select_related('project', 'debt')
-    ttype = self.request.GET.get('type')
-    project = self.request.GET.get('project')
-    if ttype:
-      qs = qs.filter(transaction_type=ttype)
-    if project:
-      qs = qs.filter(project_id=project)
-    _, _, start, end, all_time = parse_finance_period(self.request)
-    return filter_queryset_by_period(qs, start, end, all_time)
 
   def get_context_data(self, **kwargs):
     ctx = super().get_context_data(**kwargs)
+    _, _, start, end, all_time = parse_finance_period(self.request)
+    project = self.request.GET.get('project')
+    transaction_type = self.request.GET.get('type')
+
+    transactions = Transaction.objects.select_related('project', 'debt')
+    reserve_transfers = ReserveTransfer.objects.select_related('project')
+    utilities_operations = UtilitiesOperation.objects.select_related('project', 'debt')
+    if project:
+      transactions = transactions.filter(project_id=project)
+      reserve_transfers = reserve_transfers.filter(project_id=project)
+      utilities_operations = utilities_operations.filter(project_id=project)
+    if transaction_type:
+      transactions = transactions.filter(transaction_type=transaction_type)
+
+    transactions = filter_queryset_by_period(transactions, start, end, all_time)
+    reserve_transfers = filter_queryset_by_period(reserve_transfers, start, end, all_time)
+    utilities_operations = filter_queryset_by_period(utilities_operations, start, end, all_time)
+
+    entries = []
+    for transaction in transactions:
+      entries.append({
+        'date': transaction.date,
+        'created_at': transaction.created_at,
+        'title': transaction.title,
+        'url': transaction.get_absolute_url(),
+        'account': 'Основной баланс',
+        'operation': transaction.get_transaction_type_display(),
+        'amount': transaction.amount,
+        'sign': '−' if transaction.transaction_type == TransactionType.EXPENSE else '+',
+        'amount_class': 'text-danger' if transaction.transaction_type == TransactionType.EXPENSE else 'text-success',
+      })
+    for transfer in reserve_transfers:
+      entries.append({
+        'date': transfer.date,
+        'created_at': transfer.created_at,
+        'title': transfer.title,
+        'url': transfer.get_absolute_url(),
+        'account': 'Резерв',
+        'operation': transfer.get_direction_display(),
+        'amount': transfer.amount,
+        'sign': '+' if transfer.direction == ReserveDirection.TO_RESERVE else '−',
+        'amount_class': 'text-info' if transfer.direction == ReserveDirection.TO_RESERVE else 'text-warning',
+      })
+    for operation in utilities_operations:
+      entries.append({
+        'date': operation.date,
+        'created_at': operation.created_at,
+        'title': operation.title,
+        'url': operation.get_absolute_url(),
+        'account': 'Коммунальные',
+        'operation': operation.get_operation_type_display(),
+        'amount': operation.amount,
+        'sign': '+' if operation.operation_type == UtilitiesOperationType.DEPOSIT else '−',
+        'amount_class': 'text-success' if operation.operation_type == UtilitiesOperationType.DEPOSIT else 'text-danger',
+      })
+    ctx['transactions'] = sorted(entries, key=lambda entry: (entry['date'], entry['created_at']), reverse=True)
+
     extra = []
-    if self.request.GET.get('type'):
-      extra.append(f"type={self.request.GET['type']}")
-    if self.request.GET.get('project'):
-      extra.append(f"project={self.request.GET['project']}")
+    if transaction_type:
+      extra.append(f"type={transaction_type}")
+    if project:
+      extra.append(f"project={project}")
     ctx.update(_finance_period_context(self.request, extra=extra or None))
     return ctx
 
