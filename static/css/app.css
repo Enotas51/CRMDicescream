@@ -893,6 +893,13 @@ body.has-sidebar .app-main {
 
 /* --- Mobile sidebar --- */
 @media (max-width: 991.98px) {
+  /* Mobile browsers reserve part of 100vh for their address bar, creating a
+     phantom page scroll even when the content fits on screen. */
+  body,
+  body.has-sidebar {
+    min-height: 100dvh;
+  }
+
   body.has-sidebar .app-main {
     margin-left: 0;
   }
