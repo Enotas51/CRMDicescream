@@ -14,7 +14,6 @@ class TaskListView(ApprovedUserMixin, ListView):
   model = Task
   template_name = 'tasks/list.html'
   context_object_name = 'tasks'
-  paginate_by = 30
 
   def get_queryset(self):
     qs = Task.objects.select_related('project', 'assignee', 'created_by')
@@ -28,6 +27,24 @@ class TaskListView(ApprovedUserMixin, ListView):
     if search:
       qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
     return qs
+
+  def get_context_data(self, **kwargs):
+    ctx = super().get_context_data(**kwargs)
+    tasks_by_status = {status: [] for status, _ in TaskStatus.choices}
+    for task in ctx['tasks']:
+      tasks_by_status[task.status].append(task)
+    ctx['task_groups'] = [
+      {
+        'status': status,
+        'label': label,
+        'tasks': tasks_by_status[status],
+      }
+      for status, label in TaskStatus.choices
+      if tasks_by_status[status]
+    ]
+    ctx['can_edit'] = self.request.user.can_edit
+    ctx['task_status_choices'] = TaskStatus.choices
+    return ctx
 
 
 class TaskKanbanView(ApprovedUserMixin, ListView):
@@ -132,4 +149,6 @@ def task_update_status(request, pk):
       form.save()
       if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'ok': True, 'status': task.status})
+  if request.POST.get('source') == 'list':
+    return redirect('tasks:list')
   return redirect('tasks:kanban')

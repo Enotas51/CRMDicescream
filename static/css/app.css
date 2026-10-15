@@ -1203,6 +1203,44 @@ form .form-label {
   color: var(--ds-accent);
 }
 
+/* --- Task list --- */
+.task-list-groups { display: grid; gap: 1rem; }
+.task-list-group { overflow: hidden; border: 1px solid var(--ds-border); border-radius: 0.7rem; background: var(--ds-bg-elevated); }
+.task-list-group-header { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; border-bottom: 1px solid var(--ds-border); }
+.task-list-group-header h2 { margin: 0; color: var(--ds-text); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.task-list-group-header > span { min-width: 1.55rem; padding: 0.12rem 0.42rem; border-radius: 999px; background: var(--ds-bg-input); color: var(--ds-text-muted); font-size: 0.75rem; font-weight: 700; text-align: center; }
+.task-list-group-todo .task-list-group-header { border-left: 3px solid #ba8d39; }
+.task-list-group-in_progress .task-list-group-header { border-left: 3px solid #e2bd76; }
+.task-list-group-review .task-list-group-header { border-left: 3px solid #a47ec8; }
+.task-list-group-done .task-list-group-header { border-left: 3px solid #10b981; }
+.task-list-row { display: grid; grid-template-columns: minmax(180px, 1.45fr) minmax(120px, 1fr) minmax(135px, .9fr) minmax(95px, .6fr) minmax(120px, .75fr) minmax(150px, 1fr); gap: 1rem; align-items: center; padding: 0.8rem 1rem; border-bottom: 1px solid var(--ds-border); color: var(--ds-text); text-decoration: none; cursor: pointer; }
+.task-list-row:last-child { border-bottom: 0; }
+.task-list-row:hover { color: var(--ds-text); background: color-mix(in srgb, var(--ds-accent) 6%, transparent); }
+.task-list-row:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+.task-list-row-title { min-width: 0; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.task-list-row-project, .task-list-row-assignee { min-width: 0; overflow: hidden; color: var(--ds-text-muted); text-overflow: ellipsis; white-space: nowrap; }
+.task-list-status-form { margin: 0; }
+.task-list-status-form .form-select { min-width: 0; border-color: var(--ds-border); color: var(--ds-text); background-color: var(--ds-bg-input); font-size: 0.78rem; }
+.task-list-row-status { color: var(--ds-text-muted); font-size: 0.82rem; }
+.task-list-row-priority { font-size: 0.8rem; }
+.task-list-priority-low { color: var(--ds-text-muted); }
+.task-list-priority-medium { color: var(--ds-accent); }
+.task-list-priority-high { color: #fb923c; }
+.task-list-priority-urgent { color: #f87171; }
+.task-list-row-due { color: var(--ds-text-muted); font-size: 0.85rem; white-space: nowrap; }
+.task-list-row-due i { color: var(--ds-accent); }
+.task-list-empty { padding: 0.9rem 1rem; color: var(--ds-text-dim); font-size: 0.88rem; }
+@media (max-width: 767.98px) {
+  .task-list-row { grid-template-columns: minmax(0, 1fr) auto; gap: 0.35rem 0.75rem; padding: 0.75rem 0.85rem; }
+  .task-list-row-title { white-space: normal; }
+  .task-list-row-project { grid-column: 1; grid-row: 2; font-size: 0.8rem; }
+  .task-list-status-form, .task-list-row-status { grid-column: 2; grid-row: 1; }
+  .task-list-status-form .form-select { max-width: 8.8rem; font-size: 0.74rem; }
+  .task-list-row-priority { display: none; }
+  .task-list-row-due { grid-column: 2; grid-row: 2; font-size: 0.76rem; }
+  .task-list-row-assignee { display: none; }
+}
+
 /* --- Calendar (classic month grid) --- */
 .calendar-page {
   max-width: 1400px;
@@ -2256,13 +2294,14 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
   .calendar-classic thead th:nth-child(7)::after { content: 'ВС'; }
 
   .calendar-classic-day {
-    height: 76px;
-    min-height: 76px;
+    height: 68px;
+    min-height: 68px;
   }
 
   .calendar-day-header {
     min-height: 1.7rem;
-    padding: 0.2rem 0.25rem;
+    justify-content: center;
+    padding: 0.34rem 0.1rem 0;
   }
 
   .day-number {
@@ -2272,7 +2311,7 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
   }
 
   .calendar-day-month { display: none; }
-  .calendar-day-body { padding: 0.15rem; max-height: calc(76px - 1.7rem); }
+  .calendar-day-body { padding: 0.1rem; max-height: calc(68px - 1.7rem); }
 
   .calendar-event,
   .calendar-task {
