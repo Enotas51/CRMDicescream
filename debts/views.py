@@ -41,7 +41,11 @@ class DebtDetailView(ApprovedUserMixin, DetailView):
   def get_context_data(self, **kwargs):
     ctx = super().get_context_data(**kwargs)
     debt = self.object
-    ctx['debtors'] = debt.debtors.select_related('debtor_user').all()
+    debtors = debt.debtors.select_related('debtor_user').all()
+    ctx['debtors'] = debtors
+    # Полностью погашенные доли остаются в истории и расчётах, но не засоряют
+    # список текущих должников.
+    ctx['active_debtors'] = [debtor for debtor in debtors if debtor.remaining_amount > 0]
     ctx['repayments'] = debt.repayments.select_related(
       'debt_debtor', 'debt_debtor__debtor_user', 'created_by',
     ).order_by('-date')

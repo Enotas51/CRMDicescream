@@ -79,7 +79,9 @@ class Debt(TimeStampedModel):
 
   @property
   def debtors_display(self):
-    debtors = self.debtors.all()
+    # Погашенные доли сохраняются для истории и расчётов, но не считаются
+    # текущими должниками в кратком представлении.
+    debtors = [debtor for debtor in self.debtors.all() if debtor.remaining_amount > 0]
     if not debtors:
       return '—'
     return ', '.join(d.display_name for d in debtors)
