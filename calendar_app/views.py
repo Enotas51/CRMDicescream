@@ -38,6 +38,14 @@ class CalendarView(ApprovedUserMixin, ListView):
       start__date__gte=visible_start,
       start__date__lte=visible_end,
     )
+    upcoming_events = Event.objects.filter(
+      start__date__gte=today,
+      start__date__lte=today + timedelta(days=2),
+    ).select_related('project').prefetch_related('participants').order_by('start')
+    upcoming_tasks = Task.objects.filter(
+      due_date__gte=today,
+      due_date__lte=today + timedelta(days=2),
+    ).exclude(status='done').select_related('project', 'assignee').order_by('due_date', 'created_at')
     tasks = Task.objects.filter(
       due_date__gte=visible_start,
       due_date__lte=visible_end,
@@ -48,6 +56,9 @@ class CalendarView(ApprovedUserMixin, ListView):
       event.can_edit = user_can_edit_object(self.request.user, event)
       day_key = event.start.date()
       events_by_date.setdefault(day_key, []).append(event)
+
+    for event in upcoming_events:
+      event.can_edit = user_can_edit_object(self.request.user, event)
 
     tasks_by_date = {}
     for task in tasks:
@@ -86,6 +97,8 @@ class CalendarView(ApprovedUserMixin, ListView):
       'month': month,
       'month_name': month_names[month],
       'calendar_weeks': calendar_weeks,
+      'upcoming_events': upcoming_events,
+      'upcoming_tasks': upcoming_tasks,
       'today': today,
       'prev_year': prev_year,
       'prev_month': prev_month,

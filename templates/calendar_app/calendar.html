@@ -123,6 +123,56 @@
       </tbody>
     </table>
   </div>
+
+  {% if upcoming_events or upcoming_tasks %}
+  <section class="calendar-upcoming-mobile d-sm-none" aria-labelledby="upcomingEventsTitle">
+    <div class="calendar-upcoming-mobile-heading">
+      <i class="bi bi-calendar-event"></i>
+      <h2 id="upcomingEventsTitle">Ближайшее</h2>
+    </div>
+    <div class="calendar-upcoming-mobile-list">
+      {% for event in upcoming_events %}
+      <button type="button" class="calendar-upcoming-mobile-item" data-calendar-event-id="{{ event.pk }}" data-calendar-event-title="{{ event.title }}">
+        <span class="calendar-upcoming-mobile-icon"><i class="bi bi-calendar-event"></i></span>
+        <span class="calendar-upcoming-mobile-copy">
+          <strong>{{ event.title }}</strong>
+          <small>{{ event.start|date:"d.m" }} · {% if event.all_day %}Весь день{% else %}{{ event.start|date:"H:i" }}{% endif %}</small>
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+      <template class="calendar-event-detail-template" data-calendar-event-id="{{ event.pk }}">
+        <div class="calendar-event-detail">
+          <div class="calendar-event-detail-time">
+            <i class="bi bi-clock"></i>
+            {% if event.all_day %}Весь день{% else %}{{ event.start|date:"H:i" }}{% if event.end %} — {{ event.end|date:"H:i" }}{% endif %}{% endif %}
+          </div>
+          {% if event.description %}<div class="calendar-event-detail-description">{{ event.description|linebreaksbr }}</div>{% endif %}
+          <dl class="calendar-event-detail-meta mb-0">
+            {% if event.location %}<div><dt>Место</dt><dd>{{ event.location }}</dd></div>{% endif %}
+            {% if event.project %}<div><dt>Проект</dt><dd>{{ event.project.name }}</dd></div>{% endif %}
+          </dl>
+          {% if event.can_edit %}
+          <div class="calendar-event-detail-actions">
+            <a href="{% url 'calendar_app:edit' event.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square"></i> Редактировать</a>
+            <a href="{% url 'calendar_app:delete' event.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash3"></i> Удалить</a>
+          </div>
+          {% endif %}
+        </div>
+      </template>
+      {% endfor %}
+      {% for task in upcoming_tasks %}
+      <a href="{% url 'tasks:detail' task.pk %}" class="calendar-upcoming-mobile-item calendar-upcoming-mobile-task calendar-task-info-trigger" data-task-title="{{ task.title }}" data-task-description="{{ task.description }}" data-task-project="{{ task.project|default:'Без проекта' }}" data-task-status="{{ task.get_status_display }}" data-task-priority="{{ task.get_priority_display }}" data-task-assignee="{{ task.assignee|default:'Не назначен' }}" data-task-due="{{ task.due_date|date:'d.m.Y' }}" data-task-detail-url="{% url 'tasks:detail' task.pk %}"{% if can_edit %} data-task-edit-url="{% url 'tasks:edit' task.pk %}" data-task-delete-url="{% url 'tasks:delete' task.pk %}"{% endif %}>
+        <span class="calendar-upcoming-mobile-icon"><i class="bi bi-check2-square"></i></span>
+        <span class="calendar-upcoming-mobile-copy">
+          <strong>{{ task.title }}</strong>
+          <small>{{ task.due_date|date:"d.m" }} · Задача</small>
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 </div>
 
 <div class="modal fade" id="calendarDayModal" tabindex="-1" aria-labelledby="calendarDayModalTitle" aria-hidden="true">

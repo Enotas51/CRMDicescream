@@ -2337,6 +2337,8 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
 
 .mobile-day-dots { display: none; }
 
+.calendar-upcoming-mobile { display: none; }
+
 .calendar-day-modal { border-color: var(--ds-border); background: var(--ds-bg-elevated); }
 .calendar-day-modal .modal-header { border-bottom-color: var(--ds-border); padding: 1rem 1.1rem 0.85rem; }
 .calendar-day-modal .modal-body { padding: 0.7rem; }
@@ -2419,6 +2421,38 @@ h2, .h2 { font-size: clamp(1.6rem, 2.3vw, 2.1rem); }
 }
 
 @media (max-width: 575.98px) {
+  .calendar-upcoming-mobile {
+    display: block;
+    margin-top: 0.8rem;
+    padding: 0.85rem;
+    border: 1px solid var(--ds-border);
+    border-radius: 0.75rem;
+    background: var(--ds-bg-elevated);
+  }
+
+  .calendar-upcoming-mobile-heading { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem; color: var(--ds-accent); }
+  .calendar-upcoming-mobile-heading h2 { margin: 0; color: var(--ds-text); font-family: inherit; font-size: 0.92rem; font-weight: 700; }
+  .calendar-upcoming-mobile-list { display: grid; gap: 0.45rem; }
+  .calendar-upcoming-mobile-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem;
+    border: 1px solid var(--ds-border);
+    border-radius: 0.55rem;
+    background: var(--ds-bg-input);
+    color: var(--ds-text);
+    text-align: left;
+  }
+  .calendar-upcoming-mobile-item:active { background: rgba(201, 168, 104, 0.12); }
+  .calendar-upcoming-mobile-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.9rem; height: 1.9rem; border-radius: 0.45rem; background: rgba(168, 94, 58, 0.18); color: #d29272; flex: 0 0 auto; }
+  .calendar-upcoming-mobile-task .calendar-upcoming-mobile-icon { background: rgba(186, 141, 57, 0.16); color: #d4ab60; }
+  .calendar-upcoming-mobile-copy { display: grid; min-width: 0; gap: 0.08rem; flex: 1; }
+  .calendar-upcoming-mobile-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; }
+  .calendar-upcoming-mobile-copy small { color: var(--ds-text-dim); font-size: 0.75rem; }
+  .calendar-upcoming-mobile-item > i { color: var(--ds-text-dim); font-size: 0.78rem; }
+
   .calendar-classic-day { cursor: pointer; }
   .calendar-classic-day:active { filter: brightness(1.18); }
   .calendar-day-body > .calendar-event,
