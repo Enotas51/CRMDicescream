@@ -83,24 +83,6 @@
     </div>
   </div>
 
-  {% if can_edit %}
-  {% for debtor in debtors %}
-  {% if debtor.can_link_user %}
-  <div class="card mb-3">
-    <div class="card-header">Привязать должника «{{ debtor.debtor_name }}» к пользователю</div>
-    <div class="card-body">
-      <form method="post" action="{% url 'debts:link_debtor' debt.pk debtor.pk %}" class="row g-2 align-items-end">
-        {% csrf_token %}
-        <div class="col-md-6">{{ link_form.user }}</div>
-        <div class="col-md-auto"><button class="btn btn-primary">Привязать</button></div>
-      </form>
-    </div>
-  </div>
-  {% endif %}
-  {% endfor %}
-
-  {% endif %}
-
   <div class="card">
     <div class="card-header">История погашений</div>
     <ul class="list-group list-group-flush">
