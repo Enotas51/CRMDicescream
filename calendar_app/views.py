@@ -40,11 +40,11 @@ class CalendarView(ApprovedUserMixin, ListView):
     )
     upcoming_events = Event.objects.filter(
       start__date__gte=today,
-      start__date__lte=today + timedelta(days=2),
+      start__date__lte=today + timedelta(days=6),
     ).select_related('project').prefetch_related('participants').order_by('start')
     upcoming_tasks = Task.objects.filter(
       due_date__gte=today,
-      due_date__lte=today + timedelta(days=2),
+      due_date__lte=today + timedelta(days=6),
     ).exclude(status='done').select_related('project', 'assignee').order_by('due_date', 'created_at')
     tasks = Task.objects.filter(
       due_date__gte=visible_start,
